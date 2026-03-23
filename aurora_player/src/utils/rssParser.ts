@@ -11,9 +11,9 @@ export interface PodcastEpisode {
 
 export const parseRSSFeed = async (url: string, defaultArtwork?: string, podcastTitle?: string): Promise<PodcastEpisode[]> => {
   try {
-    const proxyUrl = `/rss2json-proxy/v1/api.json?rss_url=${encodeURIComponent(url)}`;
+    const rss2jsonUrl = `/rss2json-proxy/v1/api.json?rss_url=${encodeURIComponent(url)}&count=1000`;
 
-    const response = await fetch(proxyUrl);
+    const response = await fetch(rss2jsonUrl);
     if (!response.ok) throw new Error(`Failed to fetch RSS feed with status ${response.status}`);
 
     const data = await response.json();

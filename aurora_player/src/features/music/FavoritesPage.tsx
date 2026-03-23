@@ -1,10 +1,12 @@
 import React from 'react';
 import { usePlayerStore } from '../../store/usePlayerStore';
+import { useFavoritesStore } from '../../store/useFavoritesStore';
 import { TrackList } from '../music/TrackList';
 import { Heart } from 'lucide-react';
 
 export const FavoritesPage: React.FC = () => {
-  const { localTracks, favorites } = usePlayerStore();
+  const { localTracks } = usePlayerStore();
+  const { trackIds: favorites } = useFavoritesStore();
 
   // To show favorites, we filter the localTracks that match favorite IDs
   // In a real app, this would also include podcasts or tracks from a remote database

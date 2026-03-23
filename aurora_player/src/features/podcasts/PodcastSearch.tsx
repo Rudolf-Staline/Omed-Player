@@ -16,6 +16,7 @@ export const PodcastSearch: React.FC = () => {
   const [results, setResults] = useState<PodcastResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [visibleCount, setVisibleCount] = useState(100);
   const navigate = useNavigate();
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -24,9 +25,10 @@ export const PodcastSearch: React.FC = () => {
 
     setLoading(true);
     setError('');
+    setVisibleCount(100); // reset visible count on new search
 
     try {
-      const response = await fetch(`/itunes-proxy/search?term=${encodeURIComponent(query)}&media=podcast&entity=podcast&limit=12`);
+      const response = await fetch(`/itunes-proxy/search?term=${encodeURIComponent(query)}&media=podcast&entity=podcast&limit=200`);
       if (!response.ok) throw new Error('Network response was not ok');
       const data = await response.json();
       setResults(data.results || []);
@@ -37,10 +39,19 @@ export const PodcastSearch: React.FC = () => {
     }
   };
 
+  const handleLoadMore = () => {
+    setVisibleCount((prev) => prev + 100);
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4">
-        <h1 className="text-3xl font-display font-bold text-text-primary">Discover Podcasts</h1>
+        <div className="flex items-end gap-4">
+          <h1 className="text-3xl font-display font-bold text-text-primary">Discover Podcasts</h1>
+          {results.length > 0 && (
+            <span className="text-sm text-text-muted mb-1 font-mono">{results.length} podcasts found</span>
+          )}
+        </div>
         <form onSubmit={handleSearch} className="relative max-w-2xl w-full">
           <input
             type="text"
@@ -63,7 +74,7 @@ export const PodcastSearch: React.FC = () => {
       {error && <div className="text-accent-rose bg-accent-rose/10 p-4 rounded-lg">{error}</div>}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-        {results.map((podcast) => (
+        {results.slice(0, visibleCount).map((podcast) => (
           <div
             key={podcast.collectionId}
             className="group bg-glass p-3 rounded-xl cursor-pointer hover:bg-white/10 transition-colors"
@@ -88,6 +99,17 @@ export const PodcastSearch: React.FC = () => {
           <p className="col-span-full text-text-muted">No results found for "{query}"</p>
         )}
       </div>
+
+      {results.length > visibleCount && (
+        <div className="flex justify-center pt-8 pb-12">
+          <button
+            onClick={handleLoadMore}
+            className="px-6 py-2 bg-white/5 hover:bg-white/10 text-text-primary rounded-xl font-medium transition-all shadow-lg hover:shadow-xl border border-white/5"
+          >
+            Load more
+          </button>
+        </div>
+      )}
     </div>
   );
 };

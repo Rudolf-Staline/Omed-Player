@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Play, Loader2, ArrowLeft, Heart, RefreshCw } from 'lucide-react';
+import { Play, Loader2, ArrowLeft, Heart, RefreshCw, Bell, BellOff, CheckCircle } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { parseRSSFeed, type PodcastEpisode } from '../../utils/rssParser';
 import { usePlayerStore, type Track } from '../../store/usePlayerStore';
+import { usePodcastStore } from '../../store/usePodcastStore';
+import { useFavoritesStore } from '../../store/useFavoritesStore';
 import { geminiApi } from '../../utils/geminiApi';
 
 export const PodcastDetail: React.FC = () => {
@@ -14,7 +16,9 @@ export const PodcastDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [summary, setSummary] = useState('');
-  const { favorites, toggleFavorite } = usePlayerStore();
+  const [visibleCount, setVisibleCount] = useState(200);
+  const { episodeIds: favorites, toggleEpisodeFavorite: toggleFavorite } = useFavoritesStore();
+  const { isSubscribed, subscribe, unsubscribe, playedEpisodes, markAsPlayed } = usePodcastStore();
 
   const fetchEpisodes = useCallback(async () => {
     if (!podcast || !podcast.collectionId) {
@@ -73,7 +77,27 @@ export const PodcastDetail: React.FC = () => {
       duration: episode.duration,
     };
     playTrack(track); // BottomPlayer will catch this state change and play
+    markAsPlayed(episode.id);
   };
+
+  const isSub = podcast ? isSubscribed(podcast.collectionId) : false;
+
+  const handleToggleSubscribe = () => {
+      if (!podcast) return;
+      if (isSub) {
+          unsubscribe(podcast.collectionId);
+      } else {
+          subscribe({
+              collectionId: podcast.collectionId,
+              collectionName: podcast.collectionName,
+              artistName: podcast.artistName,
+              artworkUrl600: podcast.artworkUrl600,
+              feedUrl: podcast.feedUrl // NOTE: if feedUrl was missing and fetched, we should ideally save the fetched one, but we use what we have in state
+          });
+      }
+  };
+
+  const unplayedCount = episodes.filter(ep => !playedEpisodes[ep.id]).length;
 
   if (!podcast) {
     return (
@@ -101,6 +125,24 @@ export const PodcastDetail: React.FC = () => {
           </div>
           <h1 className="text-2xl font-display font-bold text-text-primary mb-2">{podcast.collectionName}</h1>
           <p className="text-lg text-text-muted mb-4">{podcast.artistName}</p>
+
+          <button
+             onClick={handleToggleSubscribe}
+             className={`flex w-full items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold mb-6 transition-all shadow-lg ${isSub ? 'bg-white/10 text-text-primary hover:bg-white/20 border border-white/10' : 'bg-gradient-to-r from-accent-cyan to-accent-violet text-bg-primary hover:opacity-90'}`}
+          >
+             {isSub ? (
+                 <>
+                     <BellOff size={20} />
+                     Unsubscribe
+                 </>
+             ) : (
+                 <>
+                     <Bell size={20} />
+                     Subscribe
+                 </>
+             )}
+          </button>
+
           <div className="flex flex-wrap gap-2 mb-6">
              {podcast.genres?.slice(0, 3).map((genre: string, i: number) => (
                <span key={i} className="text-xs font-medium px-2 py-1 bg-white/10 rounded-full text-text-primary">{genre}</span>
@@ -118,7 +160,18 @@ export const PodcastDetail: React.FC = () => {
         </div>
 
         <div className="w-full md:w-2/3">
-          <h2 className="text-xl font-display font-semibold mb-6 border-b border-white/5 pb-2">Episodes</h2>
+          <div className="flex items-center justify-between mb-6 border-b border-white/5 pb-2">
+            <h2 className="text-xl font-display font-semibold">Episodes</h2>
+            {isSub && !loading && episodes.length > 0 && (
+               <div className="bg-white/10 px-3 py-1 rounded-full text-sm font-medium text-accent-cyan flex items-center gap-2">
+                 <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-cyan opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-cyan"></span>
+                 </span>
+                 {unplayedCount} unplayed
+               </div>
+            )}
+          </div>
 
           {loading && (
             <div className="flex items-center justify-center py-12">
@@ -141,8 +194,10 @@ export const PodcastDetail: React.FC = () => {
 
           {!loading && !error && (
             <div className="space-y-4">
-              {episodes.map((episode) => (
-                <div key={episode.id} className="group bg-glass p-4 rounded-xl hover:bg-white/10 transition-colors border-l-4 border-transparent hover:border-accent-cyan">
+              {episodes.slice(0, visibleCount).map((episode) => {
+                const isPlayed = playedEpisodes[episode.id];
+                return (
+                <div key={episode.id} className={`group bg-glass p-4 rounded-xl transition-colors border-l-4 border-transparent hover:border-accent-cyan ${isPlayed ? 'opacity-60' : 'hover:bg-white/10'}`}>
                   <div className="flex gap-4">
                     <button
                       onClick={() => handlePlayEpisode(episode)}
@@ -160,15 +215,37 @@ export const PodcastDetail: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); toggleFavorite(episode.id); }}
-                      className={`shrink-0 transition-colors self-center p-2 rounded-full opacity-0 group-hover:opacity-100 ${favorites.includes(episode.id) ? 'text-accent-rose opacity-100' : 'text-text-muted hover:text-accent-rose hover:bg-white/5'}`}
-                    >
-                      <Heart size={20} fill={favorites.includes(episode.id) ? 'currentColor' : 'none'} />
-                    </button>
+                    <div className="shrink-0 flex flex-col items-center gap-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleFavorite(episode.id); }}
+                        className={`transition-colors p-2 rounded-full opacity-0 group-hover:opacity-100 ${favorites.includes(episode.id) ? 'text-accent-rose opacity-100' : 'text-text-muted hover:text-accent-rose hover:bg-white/5'}`}
+                        title="Add to Favorites"
+                      >
+                        <Heart size={20} fill={favorites.includes(episode.id) ? 'currentColor' : 'none'} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); markAsPlayed(episode.id); }}
+                        className={`transition-colors p-2 rounded-full ${isPlayed ? 'text-accent-cyan opacity-100' : 'text-text-muted hover:text-accent-cyan hover:bg-white/5 opacity-0 group-hover:opacity-100'}`}
+                        title={isPlayed ? "Played" : "Mark as Played"}
+                      >
+                         <CheckCircle size={20} />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
+
+              {episodes.length > visibleCount && (
+                <div className="flex justify-center pt-8 pb-4">
+                  <button
+                    onClick={() => setVisibleCount(prev => prev + 200)}
+                    className="px-6 py-2 bg-white/5 hover:bg-white/10 text-text-primary rounded-xl font-medium transition-all shadow-lg hover:shadow-xl border border-white/5"
+                  >
+                    Load more episodes
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
