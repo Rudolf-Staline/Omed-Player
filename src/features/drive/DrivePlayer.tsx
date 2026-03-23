@@ -36,7 +36,7 @@ export const DrivePlayer: React.FC = () => {
   const [scanProgress, setScanProgress] = useState(0);
   const [lastScanned, setLastScanned] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const [visibleCount, setVisibleCount] = useState(50);
+  const [visibleCount, setVisibleCount] = useState(100);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const { setLocalTracks } = usePlayerStore();
@@ -150,10 +150,10 @@ export const DrivePlayer: React.FC = () => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          setVisibleCount(prev => prev + 50);
+          setVisibleCount(prev => prev + 100);
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1, rootMargin: '400px' }
     );
     if (sentinelRef.current) observer.observe(sentinelRef.current);
     return () => observer.disconnect();
@@ -238,7 +238,7 @@ export const DrivePlayer: React.FC = () => {
                   </div>
               ) : (
                   <>
-                      <TrackList 
+                       <TrackList 
                           tracks={files.slice(0, visibleCount).map(file => ({
                               id: file.id,
                               title: file.name.replace(/\.[^/.]+$/, ""),
@@ -249,6 +249,16 @@ export const DrivePlayer: React.FC = () => {
                           }))}
                           onPlayContext={handlePlayDriveTrack}
                       />
+                      {files.length > visibleCount && (
+                        <div className="flex justify-center pt-4 pb-12">
+                          <button 
+                            onClick={() => setVisibleCount(prev => prev + 100)}
+                            className="px-6 py-2 bg-white/5 hover:bg-white/10 text-text-primary rounded-xl font-medium transition-all border border-white/5"
+                          >
+                             Afficher plus de fichiers ({files.length - visibleCount} restants)
+                          </button>
+                        </div>
+                      )}
                       <div ref={sentinelRef} className="h-4" />
                   </>
               )}
