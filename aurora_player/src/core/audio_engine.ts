@@ -14,6 +14,11 @@ class AudioEngine {
     });
   }
 
+  playAndStart(track: Track) {
+    usePlayerStore.getState().playTrack(track);
+    this.play(track);
+  }
+
   play(track: Track) {
     if (this.currentHowl) {
       this.currentHowl.stop();

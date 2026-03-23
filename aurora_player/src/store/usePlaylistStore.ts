@@ -110,7 +110,6 @@ export const usePlaylistStore = create<PlaylistState>()(
 
          const player = usePlayerStore.getState();
          player.setQueue(playlist.tracks);
-         player.playTrack(playlist.tracks[0]);
       }
     }),
     {

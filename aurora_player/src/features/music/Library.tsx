@@ -4,6 +4,7 @@ import { usePlayerStore, type Track } from '../../store/usePlayerStore';
 import { toast } from 'react-hot-toast';
 import { scanDirectory, getFileMetadata } from '../../utils/fileScanner';
 import { TrackList } from './TrackList';
+import { audioEngine } from '../../core/audio_engine';
 
 const mockAlbums = [
   { id: '1', title: 'Neon Nights', artist: 'Synthwave Dreamer', year: 2024, coverUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=300&auto=format&fit=crop' },
@@ -68,7 +69,6 @@ export const Library: React.FC = () => {
   };
 
   const handlePlayDemo = (album: typeof mockAlbums[0]) => {
-    const { playTrack } = usePlayerStore.getState();
     const mockTrack: Track = {
       id: `demo-${album.id}`,
       title: `${album.title} - Intro`,
@@ -78,7 +78,11 @@ export const Library: React.FC = () => {
       // Using a free sample audio URL
       url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
     };
-    playTrack(mockTrack); // BottomPlayer useEffect will pick this up
+    audioEngine.playAndStart(mockTrack);
+  };
+
+  const handlePlayTrack = (track: Track) => {
+    audioEngine.playAndStart(track);
   };
 
   return (
@@ -103,7 +107,7 @@ export const Library: React.FC = () => {
       {localTracks.length > 0 && (
         <section className="mt-8">
            <h2 className="text-xl font-display font-semibold mb-4 text-text-primary">Local Tracks</h2>
-           <TrackList tracks={localTracks} />
+           <TrackList tracks={localTracks} onPlayContext={handlePlayTrack} />
         </section>
       )}
 

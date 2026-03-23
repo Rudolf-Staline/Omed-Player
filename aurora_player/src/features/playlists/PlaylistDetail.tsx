@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePlaylistStore } from '../../store/usePlaylistStore';
 import { usePlayerStore } from '../../store/usePlayerStore';
+import { audioEngine } from '../../core/audio_engine';
 import { Play, ArrowLeft, GripVertical, Trash2, Clock, Music } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -77,8 +78,8 @@ const SortableTrack: React.FC<SortableTrackProps> = ({ track, index, onRemove, o
 export const PlaylistDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { playlists, removeTrackFromPlaylist, reorderTracks, playPlaylist } = usePlaylistStore();
-  const { currentTrack, setQueue, playTrack } = usePlayerStore();
+  const { playlists, removeTrackFromPlaylist, reorderTracks } = usePlaylistStore();
+  const { currentTrack, setQueue } = usePlayerStore();
 
   const playlist = playlists.find(p => p.id === id);
 
@@ -106,12 +107,17 @@ export const PlaylistDetail: React.FC = () => {
   };
 
   const handlePlayAll = () => {
-      playPlaylist(playlist.id);
+      if (!playlist?.tracks.length) return;
+      setQueue(playlist.tracks);
+      audioEngine.playAndStart(playlist.tracks[0]);
   };
 
   const handlePlayTrack = (index: number) => {
+      if (!playlist?.tracks.length) return;
+      const track = playlist.tracks[index];
+      if (!track) return;
       setQueue(playlist.tracks);
-      playTrack(playlist.tracks[index]);
+      audioEngine.playAndStart(track);
   };
 
   const totalDuration = playlist.tracks.reduce((acc, t) => acc + (t.duration || 0), 0);
