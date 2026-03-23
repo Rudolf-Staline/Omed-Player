@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Play, Loader2, ArrowLeft, Heart } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { parseRSSFeed, type PodcastEpisode } from '../../utils/rssParser';
-import { audioEngine } from '../../core/audio_engine';
 import { usePlayerStore, type Track } from '../../store/usePlayerStore';
 import { geminiApi } from '../../utils/geminiApi';
 
@@ -48,6 +47,7 @@ export const PodcastDetail: React.FC = () => {
   }, [podcast]);
 
   const handlePlayEpisode = (episode: PodcastEpisode) => {
+    const { playTrack } = usePlayerStore.getState();
     const track: Track = {
       id: episode.id,
       title: episode.title,
@@ -57,7 +57,7 @@ export const PodcastDetail: React.FC = () => {
       artworkUrl: episode.artworkUrl,
       duration: episode.duration,
     };
-    audioEngine.play(track);
+    playTrack(track); // BottomPlayer will catch this state change and play
   };
 
   if (!podcast) {

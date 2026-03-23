@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Maximize2, Repeat, Shuffle, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { usePlayerStore } from '../store/usePlayerStore';
@@ -9,6 +9,14 @@ import { useSettingsStore } from '../store/useSettingsStore';
 export const BottomPlayer: React.FC = () => {
   const { currentTrack, isPlaying, progress, currentTime, duration, volume, favorites, toggleFavorite, repeatMode, isShuffle, playNext, playPrevious, toggleShuffle, toggleRepeatMode } = usePlayerStore();
   const { animationsEnabled } = useSettingsStore();
+  const prevTrackId = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (currentTrack && currentTrack.id !== prevTrackId.current) {
+      audioEngine.play(currentTrack);
+      prevTrackId.current = currentTrack.id;
+    }
+  }, [currentTrack]);
 
   const formatTime = (timeInSeconds: number) => {
     const mins = Math.floor(timeInSeconds / 60);
@@ -86,7 +94,7 @@ export const BottomPlayer: React.FC = () => {
               {isShuffle && <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-accent-cyan rounded-full" />}
             </button>
             <button
-              onClick={() => { playPrevious(); if (currentTrack) audioEngine.play(usePlayerStore.getState().currentTrack!); }}
+              onClick={playPrevious}
               className="text-text-primary hover:text-accent-cyan transition-colors"
             >
               <SkipBack size={20} fill="currentColor" />
@@ -103,7 +111,7 @@ export const BottomPlayer: React.FC = () => {
               )}
             </button>
             <button
-              onClick={() => { playNext(); if (currentTrack) audioEngine.play(usePlayerStore.getState().currentTrack!); }}
+              onClick={playNext}
               className="text-text-primary hover:text-accent-cyan transition-colors"
             >
               <SkipForward size={20} fill="currentColor" />
