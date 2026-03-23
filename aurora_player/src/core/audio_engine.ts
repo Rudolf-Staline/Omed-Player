@@ -45,22 +45,9 @@ class AudioEngine {
         if (state.repeatMode === 'one') {
           this.play(track);
         } else {
-          // Temporarily pause UI while loading next
-          state.pause();
-
-          // Trigger the next track logic.
-          // Note: playNext sets the store state, which will need to trigger this engine again.
-          // In a real app, an effect in a root component or a store subscriber handles playing the new track.
-          // For simplicity here, we can just call the store action, and if it changes the track, we play it.
-          const currentTrackId = state.currentTrack?.id;
+          // Trigger the next track logic in the store.
+          // The BottomPlayer's useEffect will detect the track change and call play()
           state.playNext();
-
-          const newTrack = usePlayerStore.getState().currentTrack;
-          if (newTrack && newTrack.id !== currentTrackId) {
-             this.play(newTrack);
-          } else if (newTrack && state.repeatMode === 'all') {
-             this.play(newTrack);
-          }
         }
       },
       onloaderror: (_id, error) => {

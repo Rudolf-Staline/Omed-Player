@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Play, FolderOpen, Loader2 } from 'lucide-react';
-import { audioEngine } from '../../core/audio_engine';
 import { usePlayerStore, type Track } from '../../store/usePlayerStore';
 import { scanDirectory, getFileMetadata } from '../../utils/fileScanner';
 import { TrackList } from './TrackList';
@@ -58,6 +57,7 @@ export const Library: React.FC = () => {
   };
 
   const handlePlayDemo = (album: typeof mockAlbums[0]) => {
+    const { playTrack } = usePlayerStore.getState();
     const mockTrack: Track = {
       id: `demo-${album.id}`,
       title: `${album.title} - Intro`,
@@ -67,7 +67,7 @@ export const Library: React.FC = () => {
       // Using a free sample audio URL
       url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
     };
-    audioEngine.play(mockTrack);
+    playTrack(mockTrack); // BottomPlayer useEffect will pick this up
   };
 
   return (

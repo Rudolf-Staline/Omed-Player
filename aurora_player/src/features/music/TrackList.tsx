@@ -1,7 +1,6 @@
 import React from 'react';
 import { Play, MoreHorizontal, Heart } from 'lucide-react';
 import { usePlayerStore, type Track } from '../../store/usePlayerStore';
-import { audioEngine } from '../../core/audio_engine';
 
 interface TrackListProps {
   tracks: Track[];
@@ -27,12 +26,12 @@ export const TrackList: React.FC<TrackListProps> = ({ tracks }) => {
             <tr
               key={track.id}
               className="group border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer"
-              onDoubleClick={() => audioEngine.play(track)}
+              onDoubleClick={() => usePlayerStore.getState().playTrack(track)}
             >
               <td className="py-3 pl-4 text-text-muted w-12 text-sm">
                 <span className="group-hover:hidden">{index + 1}</span>
                 <button
-                  onClick={() => audioEngine.play(track)}
+                  onClick={() => usePlayerStore.getState().playTrack(track)}
                   className="hidden group-hover:flex text-accent-cyan"
                 >
                   <Play size={16} fill="currentColor" />
