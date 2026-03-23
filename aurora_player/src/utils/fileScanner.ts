@@ -1,20 +1,36 @@
-export const getFileMetadata = async (file: File): Promise<{ title: string; artist: string; album: string }> => {
-  // In a real application, you'd use jsmediatags or music-metadata-browser here.
-  // Due to browser constraints and sandboxing, we'll extract basic info from the filename
-  // as a robust fallback for the MVP.
+import { parseBlob } from 'music-metadata';
 
-  let title = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+export const getFileMetadata = async (file: File): Promise<{ title: string; artist: string; album: string; artworkUrl?: string }> => {
+  let title = file.name.replace(/\.[^/.]+$/, ""); // Remove extension fallback
   let artist = 'Unknown Artist';
   let album = 'Local Files';
+  let artworkUrl: string | undefined = undefined;
 
-  // Basic parsing assuming "Artist - Title" format
-  if (title.includes(' - ')) {
-    const parts = title.split(' - ');
-    artist = parts[0].trim();
-    title = parts.slice(1).join(' - ').trim();
+  try {
+    // Read tags from the File object
+    const metadata = await parseBlob(file);
+
+    if (metadata.common.title) title = metadata.common.title;
+    if (metadata.common.artist) artist = metadata.common.artist;
+    if (metadata.common.album) album = metadata.common.album;
+
+    // Extract picture
+    if (metadata.common.picture && metadata.common.picture.length > 0) {
+      const picture = metadata.common.picture[0];
+      const blob = new Blob([new Uint8Array(picture.data).buffer as ArrayBuffer], { type: picture.format });
+      artworkUrl = URL.createObjectURL(blob);
+    }
+  } catch (error) {
+    console.warn(`Failed to parse metadata for ${file.name}, using fallback.`, error);
+    // Basic parsing assuming "Artist - Title" format
+    if (title.includes(' - ')) {
+      const parts = title.split(' - ');
+      artist = parts[0].trim();
+      title = parts.slice(1).join(' - ').trim();
+    }
   }
 
-  return { title, artist, album };
+  return { title, artist, album, artworkUrl };
 };
 
 export const scanDirectory = async (dirHandle: any): Promise<File[]> => {

@@ -41,6 +41,7 @@ export const Library: React.FC = () => {
             title: metadata.title,
             artist: metadata.artist,
             album: metadata.album,
+            artworkUrl: metadata.artworkUrl,
             url: url,
           };
         })
