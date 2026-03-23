@@ -22,3 +22,20 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment
+.env
+.env*.local
+
+# Cloud Config Cache (Omed specific)
+/src/config/cloud-sync.tmp.json
+/backup/
+
+# Build and IDE
+.next/
+out/
+build/
+.cache/
+.parcel-cache/
+.vite
+.eslintcache
