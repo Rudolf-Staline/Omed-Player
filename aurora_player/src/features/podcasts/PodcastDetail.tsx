@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Loader2, ArrowLeft, Heart } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Play, Loader2, ArrowLeft, Heart, RefreshCw } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { parseRSSFeed, type PodcastEpisode } from '../../utils/rssParser';
 import { usePlayerStore, type Track } from '../../store/usePlayerStore';
@@ -16,35 +16,35 @@ export const PodcastDetail: React.FC = () => {
   const [summary, setSummary] = useState('');
   const { favorites, toggleFavorite } = usePlayerStore();
 
-  useEffect(() => {
+  const fetchEpisodes = useCallback(async () => {
     if (!podcast || !podcast.feedUrl) {
       setError('Invalid podcast data.');
       setLoading(false);
       return;
     }
 
-    const fetchEpisodes = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const data = await parseRSSFeed(podcast.feedUrl, podcast.artworkUrl600, podcast.collectionName);
-        setEpisodes(data);
+    setLoading(true);
+    setError('');
 
-        // Use Gemini API to generate a smart recommendation based on the first few episodes
-        if (data.length > 0) {
-           const sampleTitles = data.slice(0, 3).map(e => e.title);
-           const recs = await geminiApi.getSmartRecommendations([podcast.collectionName, ...sampleTitles]);
-           setSummary(recs);
-        }
-      } catch (err: any) {
-        setError(err.message || 'Failed to load episodes');
-      } finally {
-        setLoading(false);
+    try {
+      const data = await parseRSSFeed(podcast.feedUrl, podcast.artworkUrl600, podcast.collectionName);
+      setEpisodes(data);
+
+      if (data.length > 0) {
+         const sampleTitles = data.slice(0, 3).map(e => e.title);
+         const recs = await geminiApi.getSmartRecommendations([podcast.collectionName, ...sampleTitles]);
+         setSummary(recs);
       }
-    };
-
-    fetchEpisodes();
+    } catch (err: any) {
+      setError(err.message || 'Failed to load episodes');
+    } finally {
+      setLoading(false);
+    }
   }, [podcast]);
+
+  useEffect(() => {
+    fetchEpisodes();
+  }, [fetchEpisodes]);
 
   const handlePlayEpisode = (episode: PodcastEpisode) => {
     const { playTrack } = usePlayerStore.getState();
@@ -111,7 +111,18 @@ export const PodcastDetail: React.FC = () => {
             </div>
           )}
 
-          {error && <div className="text-accent-rose bg-accent-rose/10 p-4 rounded-lg">{error}</div>}
+          {error && (
+            <div className="flex flex-col items-start gap-4 text-accent-rose bg-accent-rose/10 p-4 rounded-lg">
+              <p>{error}</p>
+              <button
+                onClick={fetchEpisodes}
+                className="flex items-center gap-2 bg-accent-rose text-bg-primary px-4 py-2 rounded-lg font-medium hover:bg-accent-rose/80 transition-colors"
+              >
+                <RefreshCw size={16} />
+                Retry Connection
+              </button>
+            </div>
+          )}
 
           {!loading && !error && (
             <div className="space-y-4">
