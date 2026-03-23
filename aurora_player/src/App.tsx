@@ -5,10 +5,17 @@ import { Layout } from './components/Layout';
 import { Library } from './features/music/Library';
 import { PodcastSearch } from './features/podcasts/PodcastSearch';
 import { PodcastDetail } from './features/podcasts/PodcastDetail';
+import { SubscriptionsPage } from './features/podcasts/SubscriptionsPage';
+import { PlaylistsPage } from './features/playlists/PlaylistsPage';
+import { PlaylistDetail } from './features/playlists/PlaylistDetail';
 import { VideoPlayer } from './features/video/VideoPlayer';
 import { SettingsPage } from './features/settings/SettingsPage';
 import { FavoritesPage } from './features/music/FavoritesPage';
+import { DrivePlayer } from './features/drive/DrivePlayer';
 import { useSettingsStore } from './store/useSettingsStore';
+import { useAuthStore } from './store/useAuthStore';
+import { LoginPage } from './features/auth/LoginPage';
+import { Toaster } from 'react-hot-toast';
 
 const pageVariants = {
   initial: { opacity: 0, y: 10, filter: 'blur(4px)' },
@@ -45,6 +52,11 @@ const AnimatedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 function App() {
   const location = useLocation();
   const { theme, density, animationsEnabled } = useSettingsStore();
+  const { isConnected, restoreSession } = useAuthStore();
+
+  React.useEffect(() => {
+    restoreSession();
+  }, [restoreSession]);
 
   React.useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -71,16 +83,30 @@ function App() {
     }
   }, [theme, density]);
 
+  if (!isConnected) {
+    return (
+      <>
+        <LoginPage />
+        <Toaster position="bottom-center" />
+      </>
+    );
+  }
+
   return (
     <Layout>
+      <Toaster position="bottom-center" />
       <AnimatePresence mode="wait" initial={animationsEnabled}>
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<Navigate to="/music" replace />} />
           <Route path="/music" element={<AnimatedRoute><Library /></AnimatedRoute>} />
           <Route path="/podcasts" element={<AnimatedRoute><PodcastSearch /></AnimatedRoute>} />
           <Route path="/podcasts/:id" element={<AnimatedRoute><PodcastDetail /></AnimatedRoute>} />
+          <Route path="/subscriptions" element={<AnimatedRoute><SubscriptionsPage /></AnimatedRoute>} />
           <Route path="/video" element={<AnimatedRoute><VideoPlayer /></AnimatedRoute>} />
           <Route path="/settings" element={<AnimatedRoute><SettingsPage /></AnimatedRoute>} />
+          <Route path="/playlists" element={<AnimatedRoute><PlaylistsPage /></AnimatedRoute>} />
+          <Route path="/playlists/:id" element={<AnimatedRoute><PlaylistDetail /></AnimatedRoute>} />
+          <Route path="/drive" element={<AnimatedRoute><DrivePlayer /></AnimatedRoute>} />
           <Route path="/local-files" element={<Navigate to="/music" replace />} />
           <Route path="/favorites" element={<AnimatedRoute><FavoritesPage /></AnimatedRoute>} />
           {/* Fallback for unhandled routes */}

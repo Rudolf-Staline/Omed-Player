@@ -19,7 +19,6 @@ interface PlayerState {
   duration: number;
   queue: Track[];
   localTracks: Track[];
-  favorites: string[]; // Store track IDs
   repeatMode: 'none' | 'all' | 'one';
   isShuffle: boolean;
 
@@ -37,18 +36,9 @@ interface PlayerState {
   setDuration: (duration: number) => void;
   addToQueue: (track: Track) => void;
   clearQueue: () => void;
+  setQueue: (tracks: Track[]) => void;
   setLocalTracks: (tracks: Track[]) => void;
-  toggleFavorite: (trackId: string) => void;
 }
-
-const loadFavorites = (): string[] => {
-  try {
-    const data = localStorage.getItem('aurora_favorites');
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
-};
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
   currentTrack: null,
@@ -59,7 +49,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   duration: 0,
   queue: [],
   localTracks: [],
-  favorites: loadFavorites(),
   repeatMode: 'none',
   isShuffle: false,
 
@@ -72,13 +61,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setDuration: (duration) => set({ duration }),
   addToQueue: (track) => set((state) => ({ queue: [...state.queue, track] })),
   clearQueue: () => set({ queue: [] }),
+  setQueue: (tracks) => set({ queue: tracks, localTracks: tracks }),
   setLocalTracks: (tracks) => set({ localTracks: tracks }),
-  toggleFavorite: (trackId) => set((state) => {
-    const isFav = state.favorites.includes(trackId);
-    const newFavs = isFav ? state.favorites.filter(id => id !== trackId) : [...state.favorites, trackId];
-    localStorage.setItem('aurora_favorites', JSON.stringify(newFavs));
-    return { favorites: newFavs };
-  }),
   playNext: () => {
     const { currentTrack, localTracks, isShuffle, repeatMode, playTrack } = get();
     if (!currentTrack || localTracks.length === 0) return;

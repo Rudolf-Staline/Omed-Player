@@ -2,12 +2,14 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Maximize2, Repeat, Shuffle, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { usePlayerStore } from '../store/usePlayerStore';
+import { useFavoritesStore } from '../store/useFavoritesStore';
 import { audioEngine } from '../core/audio_engine';
 
 import { useSettingsStore } from '../store/useSettingsStore';
 
 export const BottomPlayer: React.FC = () => {
-  const { currentTrack, isPlaying, progress, currentTime, duration, volume, favorites, toggleFavorite, repeatMode, isShuffle, playNext, playPrevious, toggleShuffle, toggleRepeatMode } = usePlayerStore();
+  const { currentTrack, isPlaying, progress, currentTime, duration, volume, repeatMode, isShuffle, playNext, playPrevious, toggleShuffle, toggleRepeatMode } = usePlayerStore();
+  const { trackIds: favorites, toggleTrackFavorite: toggleFavorite } = useFavoritesStore();
   const { animationsEnabled } = useSettingsStore();
   const prevTrackId = useRef<string | undefined>(undefined);
 

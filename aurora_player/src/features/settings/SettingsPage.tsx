@@ -1,8 +1,11 @@
 import React from 'react';
 import { useSettingsStore, type ThemeType, type DensityType } from '../../store/useSettingsStore';
+import { useAuthStore } from '../../store/useAuthStore';
+import { LogOut } from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
   const { theme, density, animationsEnabled, setTheme, setDensity, setAnimationsEnabled } = useSettingsStore();
+  const { user, logout } = useAuthStore();
 
   const themes: { id: ThemeType; name: string; colors: string[] }[] = [
     { id: 'aurora', name: 'Aurora Boreale', colors: ['bg-[#00E5FF]', 'bg-[#A855F7]'] },
@@ -16,6 +19,44 @@ export const SettingsPage: React.FC = () => {
         <h1 className="text-3xl font-display font-bold text-text-primary mb-2">Settings</h1>
         <p className="text-text-muted">Customize your Aurora Player experience.</p>
       </div>
+
+      {/* Google Account Section */}
+      <section className="bg-glass p-6 rounded-2xl border border-white/5">
+        <h2 className="text-xl font-display font-semibold text-text-primary mb-6 border-b border-white/5 pb-2">
+          Google Account
+        </h2>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-4 w-full sm:w-auto">
+             {user?.avatar ? (
+                 <img src={user.avatar} alt="Profile" className="w-16 h-16 rounded-full bg-white/10 object-cover" />
+             ) : (
+                 <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-2xl font-bold">
+                     {user?.name?.[0] || '?'}
+                 </div>
+             )}
+             <div>
+                 <p className="text-lg font-bold text-text-primary">{user?.name}</p>
+                 <p className="text-sm text-text-muted">{user?.email}</p>
+                 <p className="text-xs text-text-muted/60 mt-2 font-mono">Last synced: just now</p>
+             </div>
+          </div>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
+             <button
+                 onClick={() => {}}
+                 className="flex-1 sm:flex-none px-4 py-2 bg-accent-cyan text-bg-primary font-bold rounded-lg hover:opacity-90 transition-opacity"
+             >
+                 Sync Now
+             </button>
+             <button
+                 onClick={logout}
+                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white/10 text-accent-rose hover:bg-accent-rose/10 font-medium rounded-lg transition-colors border border-transparent hover:border-accent-rose/30"
+             >
+                 <LogOut size={16} /> Déconnexion
+             </button>
+          </div>
+        </div>
+      </section>
 
       {/* Theme Section */}
       <section className="space-y-4">
@@ -76,6 +117,7 @@ export const SettingsPage: React.FC = () => {
           </button>
         </div>
       </section>
+
     </div>
   );
 };

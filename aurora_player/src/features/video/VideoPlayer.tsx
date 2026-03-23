@@ -16,7 +16,7 @@ export const VideoPlayer: React.FC = () => {
   const [showControls, setShowControls] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
 
-  let controlsTimeout: number | undefined;
+  const controlsTimeoutRef = useRef<number | undefined>(undefined);
 
   const formatTime = (timeInSeconds: number) => {
     if (!timeInSeconds || isNaN(timeInSeconds)) return "0:00";
@@ -43,7 +43,7 @@ export const VideoPlayer: React.FC = () => {
 
   useEffect(() => {
     return () => {
-      if (controlsTimeout) clearTimeout(controlsTimeout);
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
       if (videoSrc) URL.revokeObjectURL(videoSrc);
     };
   }, [videoSrc]);
@@ -139,15 +139,15 @@ export const VideoPlayer: React.FC = () => {
 
   const handleMouseMove = () => {
     setShowControls(true);
-    if (controlsTimeout) clearTimeout(controlsTimeout);
+    if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     if (isPlaying) {
-      controlsTimeout = window.setTimeout(() => setShowControls(false), 3000);
+      controlsTimeoutRef.current = window.setTimeout(() => setShowControls(false), 3000);
     }
   };
 
   useEffect(() => {
     return () => {
-      if (controlsTimeout) clearTimeout(controlsTimeout);
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     };
   }, []);
 
