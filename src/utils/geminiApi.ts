@@ -3,9 +3,7 @@
  * This file serves as a scaffold for the AI features of Aurora Player.
  */
 
-// Placeholder for the API key, typically loaded from environment variables
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || 'YOUR_API_KEY_HERE';
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+import { useSettingsStore } from '../store/useSettingsStore';
 
 export const geminiApi = {
   /**
@@ -47,13 +45,19 @@ export const geminiApi = {
    * @returns The generated text response.
    */
   async generateContent(prompt: string): Promise<string> {
-    if (GEMINI_API_KEY === 'YOUR_API_KEY_HERE') {
+    const userKey = useSettingsStore.getState().geminiApiKey;
+    const configKey = import.meta.env.VITE_GEMINI_API_KEY;
+    const activeKey = userKey || configKey;
+
+    if (!activeKey || activeKey === 'YOUR_API_KEY_HERE') {
       console.warn('Gemini API Key is missing. Returning mock response.');
       return this.getMockResponse(prompt);
     }
 
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${activeKey}`;
+
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -61,7 +65,7 @@ export const geminiApi = {
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
         }),
-        signal: AbortSignal.timeout(5000)
+        signal: AbortSignal.timeout(10000)
       });
 
       if (!response.ok) {

@@ -2,11 +2,20 @@ import React from 'react';
 import { useSettingsStore, type ThemeType, type DensityType } from '../../store/useSettingsStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { usePlaylistStore } from '../../store/usePlaylistStore';
-import { LogOut } from 'lucide-react';
+import { LogOut, Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 export const SettingsPage: React.FC = () => {
-  const { theme, density, animationsEnabled, setTheme, setDensity, setAnimationsEnabled } = useSettingsStore();
+  const { 
+    theme, 
+    density, 
+    animationsEnabled, 
+    geminiApiKey,
+    setTheme, 
+    setDensity, 
+    setAnimationsEnabled,
+    setGeminiApiKey
+  } = useSettingsStore();
   const { user, logout } = useAuthStore();
 
   const themes: { id: ThemeType; name: string; colors: string[] }[] = [
@@ -65,6 +74,55 @@ export const SettingsPage: React.FC = () => {
                  <LogOut size={16} /> Déconnexion
              </button>
           </div>
+        </div>
+      </section>
+
+      {/* AI Configuration Section */}
+      <section className="space-y-4">
+        <h2 className="text-xl font-display font-semibold text-text-primary border-b border-white/5 pb-2 flex items-center gap-2">
+          <Sparkles size={20} className="text-accent-cyan" />
+          AI Intelligence
+        </h2>
+        <div className="bg-glass p-5 rounded-2xl border border-white/5 space-y-4">
+           <div>
+              <p className="text-sm font-medium text-text-primary mb-1">Gemini API Key</p>
+              <p className="text-xs text-text-muted mb-4">
+                 Enable smart recommendations and AI-powered podcast summaries. 
+                 Get your free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-accent-cyan hover:underline">Google AI Studio</a>.
+              </p>
+              <div className="flex gap-2">
+                 <input 
+                    type="password"
+                    value={geminiApiKey}
+                    onChange={(e) => setGeminiApiKey(e.target.value)}
+                    placeholder="Enter your Gemini API key..."
+                    className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm text-text-primary focus:outline-none focus:border-accent-cyan/50 transition-all font-mono"
+                 />
+                 {geminiApiKey && (
+                    <button 
+                       onClick={() => {
+                          setGeminiApiKey('');
+                          toast.success('API Key cleared');
+                       }}
+                       className="px-3 py-2 bg-white/10 hover:bg-accent-rose/20 text-accent-rose rounded-lg text-xs font-medium transition-colors border border-white/5"
+                    >
+                       Clear
+                    </button>
+                 )}
+              </div>
+           </div>
+           {!geminiApiKey && !import.meta.env.VITE_GEMINI_API_KEY && (
+              <div className="p-3 bg-accent-rose/10 border border-accent-rose/20 rounded-lg text-xs text-accent-rose flex items-center gap-2">
+                 <div className="w-2 h-2 rounded-full bg-accent-rose animate-pulse" />
+                 AI features are currently running in <strong>Mock Mode</strong>. Add a key to enable real AI power.
+              </div>
+           )}
+           {geminiApiKey && (
+              <div className="p-3 bg-accent-cyan/10 border border-accent-cyan/20 rounded-lg text-xs text-accent-cyan flex items-center gap-2">
+                 <div className="w-2 h-2 rounded-full bg-accent-cyan" />
+                 AI services are active using your provided API key.
+              </div>
+           )}
         </div>
       </section>
 

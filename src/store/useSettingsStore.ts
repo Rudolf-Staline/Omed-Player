@@ -8,10 +8,12 @@ interface SettingsState {
   theme: ThemeType;
   density: DensityType;
   animationsEnabled: boolean;
+  geminiApiKey: string;
   
   setTheme: (theme: ThemeType) => void;
   setDensity: (density: DensityType) => void;
   setAnimationsEnabled: (enabled: boolean) => void;
+  setGeminiApiKey: (key: string) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -20,10 +22,12 @@ export const useSettingsStore = create<SettingsState>()(
       theme: 'aurora',
       density: 'normal',
       animationsEnabled: true,
+      geminiApiKey: '',
 
       setTheme: (theme) => set({ theme }),
       setDensity: (density) => set({ density }),
       setAnimationsEnabled: (animationsEnabled) => set({ animationsEnabled }),
+      setGeminiApiKey: (geminiApiKey) => set({ geminiApiKey }),
     }),
     {
       name: 'aurora_settings',
@@ -31,6 +35,7 @@ export const useSettingsStore = create<SettingsState>()(
         theme: state.theme,
         density: state.density,
         animationsEnabled: state.animationsEnabled,
+        geminiApiKey: state.geminiApiKey,
       }),
     }
   )
