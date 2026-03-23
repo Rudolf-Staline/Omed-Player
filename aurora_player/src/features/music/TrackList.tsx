@@ -113,36 +113,45 @@ export const TrackList: React.FC<TrackListProps> = ({ tracks, onPlayContext, loa
               }}
             >
               <td className="py-3 pl-4 text-text-muted w-16 text-sm relative">
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={selected}
-                    onChange={() => toggleSelection(track)}
-                    onClick={(e) => e.stopPropagation()}
-                    className={`rounded bg-white/10 border-white/20 text-accent-cyan focus:ring-accent-cyan cursor-pointer absolute left-4 z-10 transition-opacity ${selected || selectedTracks.length > 0 ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-                  />
-                  <div className={`absolute left-4 pointer-events-none transition-opacity ${selected || selectedTracks.length > 0 ? 'opacity-0' : 'opacity-100'}`}>
+                <div className="flex items-center justify-center w-6 h-6">
+                  {/* Show Checkbox on hover, or if selected, or if any track is selected */}
+                  <div className={`absolute transition-opacity ${selected || selectedTracks.length > 0 ? 'opacity-100 z-10' : 'opacity-0 group-hover:opacity-100 z-10'}`}>
+                    <input
+                      type="checkbox"
+                      checked={selected}
+                      onChange={() => toggleSelection(track)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="rounded bg-white/10 border-white/20 text-accent-cyan focus:ring-accent-cyan cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Show Number/Play Icon otherwise */}
+                  <div className={`absolute flex items-center justify-center transition-opacity ${selected || selectedTracks.length > 0 ? 'opacity-0 -z-10' : 'opacity-100 group-hover:opacity-0 -z-10'}`}>
                     {loadingTrackId === track.id ? (
                       <Loader2 size={16} className="animate-spin text-accent-cyan" />
                     ) : (
-                      <>
-                        <span className="group-hover:hidden">{index + 1}</span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (onPlayContext) {
-                              onPlayContext(track);
-                            } else {
-                              audioEngine.playAndStart(track);
-                            }
-                          }}
-                          className="hidden group-hover:flex text-accent-cyan pointer-events-auto"
-                        >
-                          <Play size={16} fill="currentColor" />
-                        </button>
-                      </>
+                      <span>{index + 1}</span>
                     )}
                   </div>
+
+                  {/* Play Button on Hover (when NO track is currently selected globally) */}
+                  {selectedTracks.length === 0 && !selected && (
+                    <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onPlayContext) {
+                            onPlayContext(track);
+                          } else {
+                            audioEngine.playAndStart(track);
+                          }
+                        }}
+                        className="text-accent-cyan pointer-events-auto"
+                      >
+                        <Play size={16} fill="currentColor" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </td>
               <td className="py-3">
