@@ -11,22 +11,52 @@ export interface PodcastEpisode {
 
 export const parseRSSFeed = async (url: string, defaultArtwork?: string, podcastTitle?: string): Promise<PodcastEpisode[]> => {
   try {
-    // Vite proxies (/raw-proxy) only work in development.
-    // In production, we fallback to AllOrigins CORS proxy.
     const isDev = import.meta.env.DEV;
-    const corsProxyUrl = isDev 
-        ? `/raw-proxy?url=${encodeURIComponent(url)}`
-        : `https://corsproxy.io/?${encodeURIComponent(url)}`;
     
-    const response = await fetch(corsProxyUrl, { signal: AbortSignal.timeout(15000) });
-    if (!response.ok) throw new Error(`Failed to fetch RSS feed with status ${response.status}`);
-    
-    const xmlText = await response.text();
-    
-    if (!xmlText) {
-        throw new Error('Failed to load RSS feed contents');
+    if (isDev) {
+        const response = await fetch(`/raw-proxy?url=${encodeURIComponent(url)}`, { signal: AbortSignal.timeout(10000) });
+        if (!response.ok) throw new Error(`Failed to fetch RSS feed with status ${response.status}`);
+        return parseXML(await response.text(), defaultArtwork, podcastTitle);
     }
 
+    // Production: Try multiple proxies as fallbacks
+    const proxies = [
+        (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+        (u: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`
+    ];
+
+    let lastError: any = null;
+    for (const getProxyUrl of proxies) {
+        try {
+            const proxyUrl = getProxyUrl(url);
+            const response = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
+            if (!response.ok) continue;
+
+            let xmlText = '';
+            if (proxyUrl.includes('allorigins.win')) {
+                const data = await response.json();
+                xmlText = data.contents;
+            } else {
+                xmlText = await response.text();
+            }
+
+            if (xmlText && (xmlText.includes('<rss') || xmlText.includes('<feed'))) {
+                return parseXML(xmlText, defaultArtwork, podcastTitle);
+            }
+        } catch (e) {
+            lastError = e;
+            console.warn(`Proxy failed: ${getProxyUrl(url)}`, e);
+        }
+    }
+
+    throw lastError || new Error('All CORS proxies failed to fetch the feed');
+  } catch (error) {
+    console.error('Error parsing RSS feed:', error);
+    throw error;
+  }
+};
+
+const parseXML = (xmlText: string, defaultArtwork?: string, podcastTitle?: string): PodcastEpisode[] => {
     const parser = new window.DOMParser();
     const doc = parser.parseFromString(xmlText, "text/xml");
 
@@ -86,11 +116,7 @@ export const parseRSSFeed = async (url: string, defaultArtwork?: string, podcast
             artworkUrl: itunesImage || mediaContent || channelArtwork,
             podcastTitle: channelTitle
         };
-    }).filter((ep: PodcastEpisode) => ep.audioUrl); // Only keep episodes with valid audio links
+    }).filter((ep: PodcastEpisode) => ep.audioUrl);
     
     return episodes;
-  } catch (error) {
-    console.error('Error parsing RSS feed:', error);
-    throw error;
-  }
 };
