@@ -123,23 +123,6 @@ export const verifyFile = async (fileId: string, token: string): Promise<boolean
     }
 };
 
-const audioBlobCache = new Map<string, string>();
-
-export const getDriveAudioStreamUrl = async (fileId: string, token: string): Promise<string> => {
-    if (audioBlobCache.has(fileId)) {
-        return audioBlobCache.get(fileId)!;
-    }
-
-    const res = await fetch(
-        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-        { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    handleApiError(res);
-    if (!res.ok) throw new Error('Failed to download audio from Drive');
-
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    audioBlobCache.set(fileId, url);
-    return url;
+export const getStreamUrl = (fileId: string, token: string): string => {
+    return `/drive-stream/${fileId}?token=${encodeURIComponent(token)}`;
 };

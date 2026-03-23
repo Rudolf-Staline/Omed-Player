@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Cloud, Loader2, Music, RefreshCw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { requireDriveAuth, scanAllAudioFiles, getDriveAudioStreamUrl } from '../../utils/googleDriveApi';
+import { requireDriveAuth, scanAllAudioFiles, getStreamUrl } from '../../utils/googleDriveApi';
 import { loadFromCloud, saveToCloud } from '../../utils/auroraSync';
 import { usePlayerStore, type Track } from '../../store/usePlayerStore';
 import { TrackList } from '../music/TrackList';
@@ -36,7 +36,7 @@ export const DrivePlayer: React.FC = () => {
   const [lastScanned, setLastScanned] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [visibleCount, setVisibleCount] = useState(50);
-  const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const { setLocalTracks } = usePlayerStore();
 
@@ -59,16 +59,12 @@ export const DrivePlayer: React.FC = () => {
 
   const handlePlayDriveTrack = async (track: Track) => {
     if (!token) return;
-    try {
-      setLoadingTrackId(track.id);
-      const blobUrl = await getDriveAudioStreamUrl(track.id, token);
-      const resolvedTrack = { ...track, url: blobUrl };
-      usePlayerStore.getState().playTrack(resolvedTrack);
-    } catch (err) {
-      toast.error('Could not load this track from Drive.');
-    } finally {
-      setLoadingTrackId(null);
-    }
+
+    // Instant stream url mapping
+    const streamUrl = getStreamUrl(track.id, token);
+    const resolvedTrack = { ...track, url: streamUrl };
+
+    usePlayerStore.getState().playTrack(resolvedTrack);
   };
 
   const loadLibrary = async () => {
@@ -79,6 +75,9 @@ export const DrivePlayer: React.FC = () => {
     if (cache?.files?.length) {
       setFiles(cache.files);
       setLastScanned(cache.lastScanned);
+      setIsFirstLoad(false);
+    } else {
+      setIsFirstLoad(true);
     }
 
     // Step 2: Progressive background scan
@@ -90,13 +89,13 @@ export const DrivePlayer: React.FC = () => {
       await scanAllAudioFiles(token, (newFiles) => {
         allFresh.push(...newFiles);
 
-        // Append new files not already in list (avoid duplicates with cache)
         setFiles(prev => {
           const existingIds = new Set(prev.map(f => f.id));
           const toAdd = newFiles.filter(f => !existingIds.has(f.id));
           return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
         });
 
+        setIsFirstLoad(false);
         setScanProgress(allFresh.length);
       });
 
@@ -104,12 +103,13 @@ export const DrivePlayer: React.FC = () => {
       const hasChanges = detectChanges(cache?.files || [], allFresh);
 
       if (hasChanges) {
-        setFiles(allFresh);
+        const enrichedFiles = allFresh.map(f => ({ ...f, streamUrl: getStreamUrl(f.id, token) }));
+        setFiles(enrichedFiles);
         const newTimestamp = new Date().toISOString();
         await saveToCloud('aurora_drive_cache.json', {
           lastScanned: newTimestamp,
-          totalFiles: allFresh.length,
-          files: allFresh,
+          totalFiles: enrichedFiles.length,
+          files: enrichedFiles,
         });
         setLastScanned(newTimestamp);
 
@@ -118,13 +118,12 @@ export const DrivePlayer: React.FC = () => {
         }
       }
 
-      // Convert to Track format for Player Store (defer blob fetching to playback time if possible to avoid massive overhead)
       const tracks: Track[] = allFresh.map((file: any) => ({
           id: file.id,
           title: file.name.replace(/\.[^/.]+$/, ""),
           artist: 'Google Drive',
           album: 'Cloud Storage',
-          url: '', // We resolve URL when played through store context if using localTracks
+          url: file.streamUrl || getStreamUrl(file.id, token),
           duration: 0,
       }));
       setLocalTracks(tracks);
@@ -219,7 +218,7 @@ export const DrivePlayer: React.FC = () => {
 
               {error ? (
                   <div className="text-accent-rose bg-accent-rose/10 p-4 rounded-lg">{error}</div>
-              ) : files.length === 0 && isScanning ? (
+              ) : files.length === 0 && isFirstLoad ? (
                   <div className="space-y-4">
                       {Array.from({ length: 8 }).map((_, i) => (
                           <div key={i} className="flex items-center gap-4 p-4 rounded-xl">
@@ -231,7 +230,7 @@ export const DrivePlayer: React.FC = () => {
                           </div>
                       ))}
                   </div>
-              ) : files.length === 0 ? (
+              ) : files.length === 0 && !isScanning ? (
                   <div className="flex flex-col items-center justify-center py-20 text-text-muted gap-4">
                       <Music size={48} className="opacity-20" />
                       <p>No audio files found in your Google Drive.</p>
@@ -244,11 +243,10 @@ export const DrivePlayer: React.FC = () => {
                               title: file.name.replace(/\.[^/.]+$/, ""),
                               artist: 'Google Drive',
                               album: 'Cloud Storage',
-                              url: '',
+                              url: file.streamUrl || getStreamUrl(file.id, token),
                               duration: 0
                           }))}
                           onPlayContext={handlePlayDriveTrack}
-                          loadingTrackId={loadingTrackId}
                       />
                       <div ref={sentinelRef} className="h-4" />
                   </>
