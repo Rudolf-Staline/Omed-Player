@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { BottomPlayer } from './BottomPlayer';
-import { Menu, X, Music } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -18,9 +18,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
        {/* Mobile Header */}
        <div className="md:hidden flex items-center justify-between p-4 border-b border-white/5 bg-bg-secondary z-30">
           <div className="flex items-center gap-3">
-             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent-cyan to-accent-violet text-white shadow-lg glow-cyan">
-               <Music size={18} />
-             </div>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent-cyan to-accent-violet text-white shadow-lg glow-cyan overflow-hidden">
+                <img src="/app-logo.png" alt="Omed Logo" className="w-full h-full object-cover" />
+              </div>
              <h1 className="text-xl font-bold tracking-tight text-text-primary">Omed</h1>
           </div>
           <button 

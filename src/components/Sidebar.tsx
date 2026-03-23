@@ -59,8 +59,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       <aside className={`w-64 flex-col border-r border-white/5 bg-bg-secondary p-4 absolute md:static inset-y-0 left-0 z-40 transition-transform duration-300 h-full md:translate-x-0 md:flex ${isOpen ? 'translate-x-0 flex' : '-translate-x-full hidden'}`}>
       <div className="mb-8 flex items-center justify-between px-2">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent-cyan to-accent-violet text-white shadow-lg glow-cyan">
-            <Music size={18} />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent-cyan to-accent-violet text-white shadow-lg glow-cyan overflow-hidden">
+            <img src="/app-logo.png" alt="Omed Logo" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-xl font-bold tracking-tight text-text-primary">Omed</h1>
         </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useAuthStore } from '../../store/useAuthStore';
-import { Music, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const { login } = useAuthStore();
@@ -33,8 +33,8 @@ export const LoginPage: React.FC = () => {
         <div className="absolute top-1/3 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-accent-violet/10 blur-[100px] rounded-full mix-blend-screen pointer-events-none" />
 
         <div className="relative z-10 w-full max-w-md bg-glass p-8 rounded-3xl border border-white/10 shadow-2xl flex flex-col items-center text-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-cyan to-accent-violet text-white shadow-lg glow-cyan mb-6">
-                <Music size={40} />
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-cyan to-accent-violet text-white shadow-lg glow-cyan mb-6 overflow-hidden p-0">
+                <img src="/app-logo.png" alt="Omed Logo" className="w-full h-full object-cover" />
             </div>
             
             <h1 className="text-4xl sm:text-5xl font-display font-bold text-text-primary tracking-tight mb-4">
