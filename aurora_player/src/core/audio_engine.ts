@@ -24,6 +24,7 @@ class AudioEngine {
     this.currentHowl = new Howl({
       src: [track.url],
       html5: true, // Force HTML5 Audio to allow streaming large files
+      format: ['mp3', 'flac', 'wav', 'm4a', 'ogg'],
       volume: usePlayerStore.getState().volume,
       onplay: () => {
         usePlayerStore.getState().resume();

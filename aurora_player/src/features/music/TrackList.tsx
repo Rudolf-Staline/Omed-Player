@@ -127,7 +127,14 @@ export const TrackList: React.FC<TrackListProps> = ({ tracks, onPlayContext, loa
                       <>
                         <span className="group-hover:hidden">{index + 1}</span>
                         <button
-                          onClick={(e) => { e.stopPropagation(); onPlayContext ? onPlayContext(track) : usePlayerStore.getState().playTrack(track); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onPlayContext) {
+                              onPlayContext(track);
+                            } else {
+                              usePlayerStore.getState().playTrack(track);
+                            }
+                          }}
                           className="hidden group-hover:flex text-accent-cyan pointer-events-auto"
                         >
                           <Play size={16} fill="currentColor" />

@@ -19,6 +19,23 @@ export default defineConfig({
         secure: true,
         rewrite: (path) => path.replace(/^\/itunes-proxy/, ''),
       },
+      '/drive-stream': {
+        target: 'https://www.googleapis.com',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/drive-stream/, '/drive/v3/files'),
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            const url = new URL('http://localhost' + (req.url || ''));
+            const token = url.searchParams.get('token');
+            if (token) {
+              proxyReq.setHeader('Authorization', `Bearer ${token}`);
+              url.searchParams.delete('token');
+              proxyReq.path = url.pathname + '?' + url.searchParams.toString() + '&alt=media';
+            }
+          });
+        },
+      },
     },
   },
 })
