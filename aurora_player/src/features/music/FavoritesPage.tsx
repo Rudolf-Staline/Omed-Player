@@ -1,8 +1,9 @@
 import React from 'react';
-import { usePlayerStore } from '../../store/usePlayerStore';
+import { usePlayerStore, type Track } from '../../store/usePlayerStore';
 import { useFavoritesStore } from '../../store/useFavoritesStore';
 import { TrackList } from '../music/TrackList';
 import { Heart } from 'lucide-react';
+import { audioEngine } from '../../core/audio_engine';
 
 export const FavoritesPage: React.FC = () => {
   const { localTracks } = usePlayerStore();
@@ -25,7 +26,7 @@ export const FavoritesPage: React.FC = () => {
       </div>
 
       {favoriteTracks.length > 0 ? (
-        <TrackList tracks={favoriteTracks} />
+        <TrackList tracks={favoriteTracks} onPlayContext={(track: Track) => audioEngine.playAndStart(track)} />
       ) : (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <Heart size={48} className="text-white/10 mb-4" />

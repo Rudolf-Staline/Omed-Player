@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { usePlayerStore, type Track } from '../../store/usePlayerStore';
 import { usePlaylistStore } from '../../store/usePlaylistStore';
 import { useFavoritesStore } from '../../store/useFavoritesStore';
+import { audioEngine } from '../../core/audio_engine';
 
 interface TrackListProps {
   tracks: Track[];
@@ -103,7 +104,7 @@ export const TrackList: React.FC<TrackListProps> = ({ tracks, onPlayContext, loa
             <tr
               key={track.id}
               className={`group border-b border-white/5 transition-colors cursor-pointer ${loadingTrackId === track.id ? 'bg-white/10 opacity-70' : 'hover:bg-white/5'} ${selected ? 'bg-accent-cyan/10 ring-1 ring-inset ring-accent-cyan/50' : ''}`}
-              onDoubleClick={() => onPlayContext ? onPlayContext(track) : usePlayerStore.getState().playTrack(track)}
+              onDoubleClick={() => onPlayContext ? onPlayContext(track) : audioEngine.playAndStart(track)}
               onClick={(e) => {
                   if (e.ctrlKey || e.metaKey || selectedTracks.length > 0) {
                       e.preventDefault();
@@ -132,7 +133,7 @@ export const TrackList: React.FC<TrackListProps> = ({ tracks, onPlayContext, loa
                             if (onPlayContext) {
                               onPlayContext(track);
                             } else {
-                              usePlayerStore.getState().playTrack(track);
+                              audioEngine.playAndStart(track);
                             }
                           }}
                           className="hidden group-hover:flex text-accent-cyan pointer-events-auto"
@@ -208,8 +209,11 @@ export const TrackList: React.FC<TrackListProps> = ({ tracks, onPlayContext, loa
       </table>
 
       {selectedTracks.length > 0 && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-6 py-3 bg-bg-secondary border border-white/10 rounded-2xl shadow-2xl backdrop-blur-xl">
-          <span className="text-sm text-text-muted font-medium w-24">
+        <div
+          style={{ bottom: '112px' }}
+          className="fixed left-1/2 -translate-x-1/2 z-[999] flex items-center gap-4 px-6 py-3 bg-bg-secondary/95 border border-accent-cyan/30 rounded-2xl shadow-2xl shadow-black/50 backdrop-blur-xl"
+        >
+          <span className="text-sm text-text-primary font-medium w-24">
             {selectedTracks.length} selected
           </span>
           <button
