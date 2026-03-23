@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Play, FolderOpen, Loader2 } from 'lucide-react';
 import { usePlayerStore, type Track } from '../../store/usePlayerStore';
+import { toast } from 'react-hot-toast';
 import { scanDirectory, getFileMetadata } from '../../utils/fileScanner';
 import { TrackList } from './TrackList';
 
@@ -30,7 +31,7 @@ export const Library: React.FC = () => {
 
       const files = await scanDirectory(dirHandle);
 
-      const tracks: Track[] = await Promise.all(
+      const newTracks: Track[] = await Promise.all(
         files.map(async (file, index) => {
           const metadata = await getFileMetadata(file);
           const url = URL.createObjectURL(file);
@@ -46,7 +47,17 @@ export const Library: React.FC = () => {
         })
       );
 
-      setLocalTracks(tracks);
+      const existingTracks = usePlayerStore.getState().localTracks;
+      const deduped = newTracks.filter(newTrack =>
+        !existingTracks.some(existing =>
+          existing.title === newTrack.title && existing.artist === newTrack.artist
+        )
+      );
+
+      setLocalTracks([...existingTracks, ...deduped]);
+      if (newTracks.length !== deduped.length) {
+        toast(`${newTracks.length - deduped.length} duplicate files skipped.`);
+      }
     } catch (err: any) {
       if (err.name !== 'AbortError') {
          setError(err.message || "Failed to scan folder.");

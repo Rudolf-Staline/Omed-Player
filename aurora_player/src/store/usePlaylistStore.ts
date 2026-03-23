@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Track } from './usePlayerStore';
 import { usePlayerStore } from './usePlayerStore';
+import { toast } from 'react-hot-toast';
 
 export interface Playlist {
   id: string;
@@ -52,13 +53,15 @@ export const usePlaylistStore = create<PlaylistState>()(
         set((state) => ({
           playlists: state.playlists.map((p) => {
             if (p.id === playlistId) {
-              // Prevent duplicates (optional, but good practice. or allow duplicates)
-              if (p.tracks.some(t => t.id === track.id)) return p;
+              const alreadyExists = p.tracks.some(t => t.id === track.id);
+              if (alreadyExists) {
+                toast.error(`"${track.title}" is already in this playlist.`);
+                return p;
+              }
               return {
                 ...p,
                 tracks: [...p.tracks, track],
                 updatedAt: new Date().toISOString(),
-                // Update coverUrl with the first track's artwork if not set
                 coverUrl: p.coverUrl || track.artworkUrl
               };
             }

@@ -35,6 +35,8 @@ interface PlayerState {
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
   addToQueue: (track: Track) => void;
+  removeFromQueue: (trackId: string) => void;
+  reorderQueue: (newOrder: Track[]) => void;
   clearQueue: () => void;
   setQueue: (tracks: Track[]) => void;
   setLocalTracks: (tracks: Track[]) => void;
@@ -60,19 +62,28 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setCurrentTime: (time) => set({ currentTime: time }),
   setDuration: (duration) => set({ duration }),
   addToQueue: (track) => set((state) => ({ queue: [...state.queue, track] })),
+  removeFromQueue: (trackId) => set((state) => ({ queue: state.queue.filter(t => t.id !== trackId) })),
+  reorderQueue: (newOrder) => set({ queue: newOrder }),
   clearQueue: () => set({ queue: [] }),
   setQueue: (tracks) => set({ queue: tracks, localTracks: tracks }),
   setLocalTracks: (tracks) => set({ localTracks: tracks }),
   playNext: () => {
-    const { currentTrack, localTracks, isShuffle, repeatMode, playTrack } = get();
-    if (!currentTrack || localTracks.length === 0) return;
+    const { currentTrack, queue, localTracks, isShuffle, repeatMode, playTrack, removeFromQueue } = get();
 
-    if (repeatMode === 'one') {
-      // Just play the same track again
+    if (repeatMode === 'one' && currentTrack) {
       playTrack(currentTrack);
-      // Wait for audio engine to handle the state change if needed, but typically we trigger play
       return;
     }
+
+    // Play from explicit queue first
+    if (queue.length > 0) {
+      const nextFromQueue = queue[0];
+      removeFromQueue(nextFromQueue.id);
+      playTrack(nextFromQueue);
+      return;
+    }
+
+    if (!currentTrack || localTracks.length === 0) return;
 
     if (isShuffle) {
       const randomIndex = Math.floor(Math.random() * localTracks.length);
@@ -87,7 +98,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       if (repeatMode === 'all') {
         nextIndex = 0;
       } else {
-        // Stop playing
         get().pause();
         return;
       }
