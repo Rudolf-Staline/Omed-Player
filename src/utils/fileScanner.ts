@@ -1,10 +1,11 @@
 import { parseBlob } from 'music-metadata';
 
-export const getFileMetadata = async (file: File): Promise<{ title: string; artist: string; album: string; artworkUrl?: string }> => {
+export const getFileMetadata = async (file: File): Promise<{ title: string; artist: string; album: string; artworkUrl?: string; duration?: number }> => {
   let title = file.name.replace(/\.[^/.]+$/, ""); // Remove extension fallback
   let artist = 'Unknown Artist';
   let album = 'Local Files';
   let artworkUrl: string | undefined = undefined;
+  let duration: number | undefined = undefined;
 
   try {
     // Read tags from the File object
@@ -13,6 +14,7 @@ export const getFileMetadata = async (file: File): Promise<{ title: string; arti
     if (metadata.common.title) title = metadata.common.title;
     if (metadata.common.artist) artist = metadata.common.artist;
     if (metadata.common.album) album = metadata.common.album;
+    if (metadata.format.duration) duration = metadata.format.duration;
 
     // Extract picture
     if (metadata.common.picture && metadata.common.picture.length > 0) {
@@ -30,7 +32,7 @@ export const getFileMetadata = async (file: File): Promise<{ title: string; arti
     }
   }
 
-  return { title, artist, album, artworkUrl };
+  return { title, artist, album, artworkUrl, duration };
 };
 
 export const scanDirectory = async (dirHandle: any): Promise<File[]> => {

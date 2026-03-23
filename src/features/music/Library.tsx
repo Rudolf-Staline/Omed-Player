@@ -44,20 +44,23 @@ export const Library: React.FC = () => {
             album: metadata.album,
             artworkUrl: metadata.artworkUrl,
             url: url,
+            duration: metadata.duration,
           };
         })
       );
 
       const existingTracks = usePlayerStore.getState().localTracks;
-      const deduped = newTracks.filter(newTrack =>
-        !existingTracks.some(existing =>
-          existing.title === newTrack.title && existing.artist === newTrack.artist
-        )
-      );
-
-      setLocalTracks([...existingTracks, ...deduped]);
-      if (newTracks.length !== deduped.length) {
-        toast(`${newTracks.length - deduped.length} duplicate files skipped.`);
+      const allTracksMap = new Map<string, Track>();
+      // Add existing first
+      existingTracks.forEach(t => allTracksMap.set(`${t.title}-${t.artist}`, t));
+      // Overwrite/Add new ones (which have durations now!)
+      newTracks.forEach(t => allTracksMap.set(`${t.title}-${t.artist}`, t));
+      
+      const merged = Array.from(allTracksMap.values());
+      setLocalTracks(merged);
+      
+      if (newTracks.length > 0) {
+        toast.success(`${newTracks.length} tracks processed.`);
       }
     } catch (err: any) {
       if (err.name !== 'AbortError') {

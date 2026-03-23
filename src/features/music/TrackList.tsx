@@ -172,7 +172,14 @@ export const TrackList: React.FC<TrackListProps> = ({ tracks, onPlayContext, loa
                 {track.album}
               </td>
               <td className="py-3 pr-4 text-right text-sm text-text-muted font-mono">
-                {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '--:--'}
+                {(() => {
+                  if (!track.duration) return '--:--';
+                  const hrs = Math.floor(track.duration / 3600);
+                  const mins = Math.floor((track.duration % 3600) / 60);
+                  const secs = Math.floor(track.duration % 60);
+                  if (hrs > 0) return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                  return `${mins}:${secs.toString().padStart(2, '0')}`;
+                })()}
               </td>
               <td className="py-3 pr-4 text-right relative" onClick={(e) => { e.stopPropagation(); }}>
                 <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
