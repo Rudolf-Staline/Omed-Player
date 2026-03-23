@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Cloud, Loader2, Music, RefreshCw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { requireDriveAuth, scanAllAudioFiles, getStreamUrl } from '../../utils/googleDriveApi';
@@ -36,9 +36,7 @@ export const DrivePlayer: React.FC = () => {
   const [scanProgress, setScanProgress] = useState(0);
   const [lastScanned, setLastScanned] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const [visibleCount, setVisibleCount] = useState(100);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
-  const sentinelRef = useRef<HTMLDivElement>(null);
   const { setLocalTracks } = usePlayerStore();
 
   const handleConnect = async () => {
@@ -146,18 +144,6 @@ export const DrivePlayer: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setVisibleCount(prev => prev + 100);
-        }
-      },
-      { threshold: 0.1, rootMargin: '400px' }
-    );
-    if (sentinelRef.current) observer.observe(sentinelRef.current);
-    return () => observer.disconnect();
-  }, []);
 
   return (
     <div className="space-y-8 pb-10">
@@ -239,7 +225,7 @@ export const DrivePlayer: React.FC = () => {
               ) : (
                   <>
                        <TrackList 
-                          tracks={files.slice(0, visibleCount).map(file => ({
+                          tracks={files.map(file => ({
                               id: file.id,
                               title: file.name.replace(/\.[^/.]+$/, ""),
                               artist: 'Google Drive',
@@ -249,17 +235,6 @@ export const DrivePlayer: React.FC = () => {
                           }))}
                           onPlayContext={handlePlayDriveTrack}
                       />
-                      {files.length > visibleCount && (
-                        <div className="flex justify-center pt-4 pb-12">
-                          <button 
-                            onClick={() => setVisibleCount(prev => prev + 100)}
-                            className="px-6 py-2 bg-white/5 hover:bg-white/10 text-text-primary rounded-xl font-medium transition-all border border-white/5"
-                          >
-                             Afficher plus de fichiers ({files.length - visibleCount} restants)
-                          </button>
-                        </div>
-                      )}
-                      <div ref={sentinelRef} className="h-4" />
                   </>
               )}
           </div>
