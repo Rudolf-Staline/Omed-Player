@@ -19,37 +19,22 @@ export const parseRSSFeed = async (url: string, defaultArtwork?: string, podcast
         return parseXML(await response.text(), defaultArtwork, podcastTitle);
     }
 
-    // Production: Try multiple proxies as fallbacks
-    const proxies = [
-        (u: string) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-        (u: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`
-    ];
+    // Production: Use our own Vercel proxy
+    const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+    
+    try {
+        const response = await fetch(proxyUrl, { signal: AbortSignal.timeout(15000) });
+        if (!response.ok) throw new Error(`Proxy failed with status ${response.status}`);
 
-    let lastError: any = null;
-    for (const getProxyUrl of proxies) {
-        try {
-            const proxyUrl = getProxyUrl(url);
-            const response = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
-            if (!response.ok) continue;
-
-            let xmlText = '';
-            if (proxyUrl.includes('allorigins.win')) {
-                const data = await response.json();
-                xmlText = data.contents;
-            } else {
-                xmlText = await response.text();
-            }
-
-            if (xmlText && (xmlText.includes('<rss') || xmlText.includes('<feed'))) {
-                return parseXML(xmlText, defaultArtwork, podcastTitle);
-            }
-        } catch (e) {
-            lastError = e;
-            console.warn(`Proxy failed: ${getProxyUrl(url)}`, e);
+        const xmlText = await response.text();
+        if (xmlText && (xmlText.includes('<rss') || xmlText.includes('<feed'))) {
+            return parseXML(xmlText, defaultArtwork, podcastTitle);
         }
+        throw new Error('Retrieved content is not a valid RSS/Atom feed');
+    } catch (e) {
+        console.error(`Omed Proxy failed for ${url}`, e);
+        throw e;
     }
-
-    throw lastError || new Error('All CORS proxies failed to fetch the feed');
   } catch (error) {
     console.error('Error parsing RSS feed:', error);
     throw error;

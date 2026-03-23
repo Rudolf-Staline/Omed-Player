@@ -28,9 +28,13 @@ export const PodcastSearch: React.FC = () => {
       // In production (Vercel), Vite proxies strictly do not work.
       // We use the direct iTunes API URL, which supports CORS for GET.
       const isDev = import.meta.env.DEV;
-      const baseUrl = isDev ? '/itunes-proxy' : 'https://itunes.apple.com';
+      const baseUrl = isDev ? '/itunes-proxy' : '/api/proxy?url=' + encodeURIComponent('https://itunes.apple.com');
       
-      const response = await fetch(`${baseUrl}/search?term=${encodeURIComponent(searchQuery)}&media=podcast&entity=podcast&limit=200`);
+      const searchUrl = isDev 
+        ? `${baseUrl}/search?term=${encodeURIComponent(searchQuery)}&media=podcast&entity=podcast&limit=200`
+        : `${baseUrl}${encodeURIComponent('/search?term=' + encodeURIComponent(searchQuery) + '&media=podcast&entity=podcast&limit=200')}`;
+
+      const response = await fetch(searchUrl);
       if (!response.ok) throw new Error('Network response was not ok');
       const data = await response.json();
       const fetchedResults = data.results || [];
