@@ -54,7 +54,7 @@ export const geminiApi = {
       return this.getMockResponse(prompt);
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${activeKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${activeKey}`;
 
     try {
       const response = await fetch(apiUrl, {
