@@ -1,10 +1,14 @@
 import React, { useCallback } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Maximize2, Repeat, Shuffle } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Maximize2, Repeat, Shuffle, Heart } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { audioEngine } from '../core/audio_engine';
 
+import { useSettingsStore } from '../store/useSettingsStore';
+
 export const BottomPlayer: React.FC = () => {
-  const { currentTrack, isPlaying, progress, currentTime, duration, volume } = usePlayerStore();
+  const { currentTrack, isPlaying, progress, currentTime, duration, volume, favorites, toggleFavorite, repeatMode, isShuffle, playNext, playPrevious, toggleShuffle, toggleRepeatMode } = usePlayerStore();
+  const { animationsEnabled } = useSettingsStore();
 
   const formatTime = (timeInSeconds: number) => {
     const mins = Math.floor(timeInSeconds / 60);
@@ -36,7 +40,12 @@ export const BottomPlayer: React.FC = () => {
   }, []);
 
   return (
-    <div className="h-24 w-full border-t border-white/10 bg-glass px-6 py-2 shadow-2xl backdrop-blur-xl z-50">
+    <motion.div
+      initial={animationsEnabled ? { y: '100%' } : false}
+      animate={{ y: 0 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      className="h-24 w-full border-t border-white/10 bg-glass px-6 py-2 shadow-2xl backdrop-blur-xl z-50"
+    >
       <div className="mx-auto flex h-full max-w-screen-2xl items-center justify-between">
 
         {/* Track Info */}
@@ -56,15 +65,30 @@ export const BottomPlayer: React.FC = () => {
               {currentTrack?.artist || 'Unknown Artist'}
             </p>
           </div>
+          {currentTrack && (
+            <button
+              onClick={() => toggleFavorite(currentTrack.id)}
+              className={`transition-colors ml-2 ${favorites.includes(currentTrack.id) ? 'text-accent-rose' : 'text-text-muted hover:text-accent-rose'}`}
+            >
+              <Heart size={18} fill={favorites.includes(currentTrack.id) ? 'currentColor' : 'none'} />
+            </button>
+          )}
         </div>
 
         {/* Player Controls */}
         <div className="flex w-2/4 flex-col items-center gap-2">
           <div className="flex items-center gap-6">
-            <button className="text-text-muted hover:text-text-primary transition-colors">
+            <button
+              onClick={toggleShuffle}
+              className={`transition-colors relative ${isShuffle ? 'text-accent-cyan' : 'text-text-muted hover:text-text-primary'}`}
+            >
               <Shuffle size={18} />
+              {isShuffle && <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-accent-cyan rounded-full" />}
             </button>
-            <button className="text-text-primary hover:text-accent-cyan transition-colors">
+            <button
+              onClick={() => { playPrevious(); if (currentTrack) audioEngine.play(usePlayerStore.getState().currentTrack!); }}
+              className="text-text-primary hover:text-accent-cyan transition-colors"
+            >
               <SkipBack size={20} fill="currentColor" />
             </button>
             <button
@@ -78,11 +102,19 @@ export const BottomPlayer: React.FC = () => {
                 <Play size={20} fill="currentColor" className="ml-1" />
               )}
             </button>
-            <button className="text-text-primary hover:text-accent-cyan transition-colors">
+            <button
+              onClick={() => { playNext(); if (currentTrack) audioEngine.play(usePlayerStore.getState().currentTrack!); }}
+              className="text-text-primary hover:text-accent-cyan transition-colors"
+            >
               <SkipForward size={20} fill="currentColor" />
             </button>
-            <button className="text-text-muted hover:text-text-primary transition-colors">
+            <button
+              onClick={toggleRepeatMode}
+              className={`transition-colors relative ${repeatMode !== 'none' ? 'text-accent-cyan' : 'text-text-muted hover:text-text-primary'}`}
+            >
               <Repeat size={18} />
+              {repeatMode === 'one' && <span className="absolute -top-1 -right-1 text-[8px] font-bold bg-bg-secondary rounded-full w-3 h-3 flex items-center justify-center">1</span>}
+              {repeatMode !== 'none' && <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-accent-cyan rounded-full" />}
             </button>
           </div>
           <div className="flex w-full items-center gap-2 max-w-md">
@@ -120,6 +152,6 @@ export const BottomPlayer: React.FC = () => {
         </div>
 
       </div>
-    </div>
+    </motion.div>
   );
 };

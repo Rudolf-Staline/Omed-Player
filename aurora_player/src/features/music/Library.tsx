@@ -1,7 +1,9 @@
-import React from 'react';
-import { Play } from 'lucide-react';
+import React, { useState } from 'react';
+import { Play, FolderOpen, Loader2 } from 'lucide-react';
 import { audioEngine } from '../../core/audio_engine';
-import { type Track } from '../../store/usePlayerStore';
+import { usePlayerStore, type Track } from '../../store/usePlayerStore';
+import { scanDirectory, getFileMetadata } from '../../utils/fileScanner';
+import { TrackList } from './TrackList';
 
 const mockAlbums = [
   { id: '1', title: 'Neon Nights', artist: 'Synthwave Dreamer', year: 2024, coverUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=300&auto=format&fit=crop' },
@@ -12,6 +14,49 @@ const mockAlbums = [
 ];
 
 export const Library: React.FC = () => {
+  const { localTracks, setLocalTracks } = usePlayerStore();
+  const [isScanning, setIsScanning] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleScanFolder = async () => {
+    try {
+      if (!('showDirectoryPicker' in window)) {
+        setError("Your browser does not support the File System Access API.");
+        return;
+      }
+
+      const dirHandle = await (window as any).showDirectoryPicker();
+      setIsScanning(true);
+      setError('');
+
+      const files = await scanDirectory(dirHandle);
+
+      const tracks: Track[] = await Promise.all(
+        files.map(async (file, index) => {
+          const metadata = await getFileMetadata(file);
+          const url = URL.createObjectURL(file);
+
+          return {
+            id: `local-${index}-${file.name}`,
+            title: metadata.title,
+            artist: metadata.artist,
+            album: metadata.album,
+            artworkUrl: metadata.artworkUrl,
+            url: url,
+          };
+        })
+      );
+
+      setLocalTracks(tracks);
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+         setError(err.message || "Failed to scan folder.");
+      }
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   const handlePlayDemo = (album: typeof mockAlbums[0]) => {
     const mockTrack: Track = {
       id: `demo-${album.id}`,
@@ -32,8 +77,26 @@ export const Library: React.FC = () => {
           <h1 className="text-3xl font-display font-bold text-text-primary">Music Library</h1>
           <p className="text-sm text-text-muted mt-1">Your local collection</p>
         </div>
+        <button
+          onClick={handleScanFolder}
+          disabled={isScanning}
+          className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-text-primary px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50"
+        >
+          {isScanning ? <Loader2 size={18} className="animate-spin" /> : <FolderOpen size={18} />}
+          <span>{isScanning ? 'Scanning...' : 'Scan Folder'}</span>
+        </button>
       </div>
 
+      {error && <div className="text-accent-rose bg-accent-rose/10 p-4 rounded-lg">{error}</div>}
+
+      {localTracks.length > 0 && (
+        <section className="mt-8">
+           <h2 className="text-xl font-display font-semibold mb-4 text-text-primary">Local Tracks</h2>
+           <TrackList tracks={localTracks} />
+        </section>
+      )}
+
+      <h2 className="text-xl font-display font-semibold mb-4 mt-8 text-text-primary border-b border-white/5 pb-2">Featured Mixes</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
         {mockAlbums.map((album) => (
           <div key={album.id} className="group bg-glass p-3 rounded-xl cursor-pointer hover:bg-white/10 transition-colors">

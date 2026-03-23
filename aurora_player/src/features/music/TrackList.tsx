@@ -1,6 +1,6 @@
 import React from 'react';
 import { Play, MoreHorizontal, Heart } from 'lucide-react';
-import { type Track } from '../../store/usePlayerStore';
+import { usePlayerStore, type Track } from '../../store/usePlayerStore';
 import { audioEngine } from '../../core/audio_engine';
 
 interface TrackListProps {
@@ -8,6 +8,8 @@ interface TrackListProps {
 }
 
 export const TrackList: React.FC<TrackListProps> = ({ tracks }) => {
+  const { favorites, toggleFavorite } = usePlayerStore();
+
   return (
     <div className="w-full">
       <table className="w-full text-left border-collapse">
@@ -53,10 +55,13 @@ export const TrackList: React.FC<TrackListProps> = ({ tracks }) => {
               <td className="py-3 pr-4 text-right text-sm text-text-muted font-mono">
                 {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '--:--'}
               </td>
-              <td className="py-3 pr-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="flex items-center justify-end gap-3">
-                  <button className="text-text-muted hover:text-accent-rose transition-colors">
-                    <Heart size={16} />
+              <td className="py-3 pr-4 text-right">
+                <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleFavorite(track.id); }}
+                    className={`transition-colors ${favorites.includes(track.id) ? 'text-accent-rose' : 'text-text-muted hover:text-accent-rose'}`}
+                  >
+                    <Heart size={16} fill={favorites.includes(track.id) ? 'currentColor' : 'none'} />
                   </button>
                   <button className="text-text-muted hover:text-text-primary transition-colors">
                     <MoreHorizontal size={16} />

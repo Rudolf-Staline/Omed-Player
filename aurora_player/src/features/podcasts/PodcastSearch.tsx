@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface PodcastResult {
   collectionId: number;
@@ -7,6 +8,7 @@ interface PodcastResult {
   artistName: string;
   artworkUrl600: string;
   genres: string[];
+  feedUrl?: string;
 }
 
 export const PodcastSearch: React.FC = () => {
@@ -14,6 +16,7 @@ export const PodcastSearch: React.FC = () => {
   const [results, setResults] = useState<PodcastResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +64,11 @@ export const PodcastSearch: React.FC = () => {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
         {results.map((podcast) => (
-          <div key={podcast.collectionId} className="group bg-glass p-3 rounded-xl cursor-pointer hover:bg-white/10 transition-colors">
+          <div
+            key={podcast.collectionId}
+            className="group bg-glass p-3 rounded-xl cursor-pointer hover:bg-white/10 transition-colors"
+            onClick={() => navigate(`/podcasts/${podcast.collectionId}`, { state: { podcast } })}
+          >
             <div className="aspect-square w-full rounded-lg overflow-hidden shadow-lg mb-4">
               <img
                 src={podcast.artworkUrl600}
