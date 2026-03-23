@@ -9,18 +9,48 @@ export interface PodcastEpisode {
   podcastTitle: string;
 }
 
+const CORS_PROXIES = [
+  (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  (url: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+  (url: string) => `https://cors-anywhere.herokuapp.com/${url}`,
+];
+
 export const parseRSSFeed = async (url: string, defaultArtwork?: string, podcastTitle?: string): Promise<PodcastEpisode[]> => {
+  let xmlText = '';
+  let lastError: any = null;
+
+  for (const proxyFn of CORS_PROXIES) {
+    try {
+      const proxyUrl = proxyFn(url);
+      const response = await fetch(proxyUrl);
+      if (!response.ok) throw new Error(`Proxy failed with status ${response.status}`);
+
+      if (proxyUrl.includes('allorigins.win')) {
+        const data = await response.json();
+        xmlText = data.contents;
+      } else {
+        xmlText = await response.text();
+      }
+
+      // If we got some text that looks like XML, break out of the loop
+      if (xmlText && xmlText.trim().startsWith('<')) {
+        break;
+      } else {
+        throw new Error('Response is not valid XML');
+      }
+    } catch (err) {
+      console.warn(`Proxy failed:`, err);
+      lastError = err;
+    }
+  }
+
+  if (!xmlText) {
+    throw new Error(lastError?.message || 'Failed to fetch RSS feed using all available proxies.');
+  }
+
   try {
-    // We use a CORS proxy or expect the browser to allow this (for real apps, a backend proxy is better)
-    // To make this work locally without CORS issues, we can try using a public CORS proxy.
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-
-    const response = await fetch(proxyUrl);
-    if (!response.ok) throw new Error('Failed to fetch RSS feed');
-    const data = await response.json();
-
     const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(data.contents, 'text/xml');
+    const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
 
     const items = xmlDoc.querySelectorAll('item');
     const episodes: PodcastEpisode[] = [];
