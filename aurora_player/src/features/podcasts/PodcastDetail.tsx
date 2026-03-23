@@ -17,7 +17,7 @@ export const PodcastDetail: React.FC = () => {
   const { favorites, toggleFavorite } = usePlayerStore();
 
   const fetchEpisodes = useCallback(async () => {
-    if (!podcast || !podcast.feedUrl) {
+    if (!podcast || !podcast.collectionId) {
       setError('Invalid podcast data.');
       setLoading(false);
       return;
@@ -27,7 +27,22 @@ export const PodcastDetail: React.FC = () => {
     setError('');
 
     try {
-      const data = await parseRSSFeed(podcast.feedUrl, podcast.artworkUrl600, podcast.collectionName);
+      let feedUrl = podcast.feedUrl;
+
+      // If feedUrl is missing, try fetching it via lookup
+      if (!feedUrl) {
+        const lookupResponse = await fetch(`/itunes-proxy/lookup?id=${podcast.collectionId}&entity=podcast`);
+        if (!lookupResponse.ok) throw new Error('Failed to fetch podcast details from iTunes');
+        const lookupData = await lookupResponse.json();
+
+        if (lookupData.results && lookupData.results.length > 0) {
+           feedUrl = lookupData.results[0].feedUrl;
+        } else {
+           throw new Error('Podcast feed URL not found');
+        }
+      }
+
+      const data = await parseRSSFeed(feedUrl, podcast.artworkUrl600, podcast.collectionName);
       setEpisodes(data);
 
       if (data.length > 0) {

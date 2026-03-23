@@ -26,7 +26,7 @@ export const PodcastSearch: React.FC = () => {
     setError('');
 
     try {
-      const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=podcast&limit=12`);
+      const response = await fetch(`/itunes-proxy/search?term=${encodeURIComponent(query)}&media=podcast&entity=podcast&limit=12`);
       if (!response.ok) throw new Error('Network response was not ok');
       const data = await response.json();
       setResults(data.results || []);

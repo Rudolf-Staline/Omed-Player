@@ -9,102 +9,47 @@ export interface PodcastEpisode {
   podcastTitle: string;
 }
 
-const CORS_PROXIES = [
-  (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  (url: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-  (url: string) => `https://cors-anywhere.herokuapp.com/${url}`,
-];
-
 export const parseRSSFeed = async (url: string, defaultArtwork?: string, podcastTitle?: string): Promise<PodcastEpisode[]> => {
-  let xmlText = '';
-  let lastError: any = null;
-
-  for (const proxyFn of CORS_PROXIES) {
-    try {
-      const proxyUrl = proxyFn(url);
-      const response = await fetch(proxyUrl);
-      if (!response.ok) throw new Error(`Proxy failed with status ${response.status}`);
-
-      if (proxyUrl.includes('allorigins.win')) {
-        const data = await response.json();
-        xmlText = data.contents;
-      } else {
-        xmlText = await response.text();
-      }
-
-      // If we got some text that looks like XML, break out of the loop
-      if (xmlText && xmlText.trim().startsWith('<')) {
-        break;
-      } else {
-        throw new Error('Response is not valid XML');
-      }
-    } catch (err) {
-      console.warn(`Proxy failed:`, err);
-      lastError = err;
-    }
-  }
-
-  if (!xmlText) {
-    throw new Error(lastError?.message || 'Failed to fetch RSS feed using all available proxies.');
-  }
-
   try {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+    const proxyUrl = `/rss2json-proxy/v1/api.json?rss_url=${encodeURIComponent(url)}`;
 
-    const items = xmlDoc.querySelectorAll('item');
-    const episodes: PodcastEpisode[] = [];
+    const response = await fetch(proxyUrl);
+    if (!response.ok) throw new Error(`Failed to fetch RSS feed with status ${response.status}`);
 
-    // Fallback podcast info
-    const channelTitle = xmlDoc.querySelector('channel > title')?.textContent || podcastTitle || 'Unknown Podcast';
-    let channelArtwork = xmlDoc.querySelector('channel > image > url')?.textContent || defaultArtwork;
+    const data = await response.json();
 
-    // Check for itunes:image
-    const itunesImage = xmlDoc.querySelector('channel > itunes\\:image, image');
-    if (itunesImage && itunesImage.getAttribute('href')) {
-        channelArtwork = itunesImage.getAttribute('href') || channelArtwork;
+    if (data.status !== 'ok') {
+        throw new Error(data.message || 'Failed to parse RSS feed from proxy');
     }
 
-    items.forEach((item, index) => {
-      const title = item.querySelector('title')?.textContent || `Episode ${index + 1}`;
-      const description = item.querySelector('description')?.textContent || '';
-      const pubDate = item.querySelector('pubDate')?.textContent || '';
+    const channelTitle = data.feed?.title || podcastTitle || 'Unknown Podcast';
+    const channelArtwork = data.feed?.image || defaultArtwork;
 
-      const enclosure = item.querySelector('enclosure');
-      const audioUrl = enclosure?.getAttribute('url') || '';
+    const episodes: PodcastEpisode[] = data.items.map((item: any, index: number) => {
+        // Parse duration if available (itunes_duration can be string "HH:MM:SS" or MM:SS)
+        let duration = 0;
+        if (item.enclosure?.duration) {
+            duration = parseInt(item.enclosure.duration, 10);
+        } else if (item.itunes_duration) {
+             const parts = String(item.itunes_duration).split(':').reverse();
+             duration = parts.reduce((acc, part, i) => acc + parseInt(part, 10) * Math.pow(60, i), 0);
+        }
 
-      // Parse duration
-      let duration = 0;
-      const durationStr = item.querySelector('itunes\\:duration, duration')?.textContent;
-      if (durationStr) {
-        const parts = durationStr.split(':').reverse();
-        duration = parts.reduce((acc, part, i) => acc + parseInt(part, 10) * Math.pow(60, i), 0);
-      }
-
-      // Check for episode specific artwork
-      let episodeArtwork = channelArtwork;
-      const itemItunesImage = item.querySelector('itunes\\:image, image');
-      if (itemItunesImage && itemItunesImage.getAttribute('href')) {
-          episodeArtwork = itemItunesImage.getAttribute('href') || episodeArtwork;
-      }
-
-      if (audioUrl) {
-        episodes.push({
-          id: item.querySelector('guid')?.textContent || audioUrl,
-          title,
-          description: description.replace(/<[^>]*>?/gm, ''), // strip html tags
-          pubDate: new Date(pubDate).toLocaleDateString(),
-          duration,
-          audioUrl,
-          artworkUrl: episodeArtwork,
-          podcastTitle: channelTitle
-        });
-      }
-    });
+        return {
+            id: item.guid || item.enclosure?.link || `episode-${index}`,
+            title: item.title || `Episode ${index + 1}`,
+            description: item.description?.replace(/<[^>]*>?/gm, '') || '', // strip html
+            pubDate: new Date(item.pubDate).toLocaleDateString(),
+            duration: isNaN(duration) ? 0 : duration,
+            audioUrl: item.enclosure?.link || '',
+            artworkUrl: item.thumbnail || channelArtwork,
+            podcastTitle: channelTitle
+        };
+    }).filter((ep: PodcastEpisode) => ep.audioUrl); // Only keep episodes with valid audio links
 
     return episodes;
   } catch (error) {
     console.error('Error parsing RSS feed:', error);
-    return [];
+    throw error;
   }
 };
