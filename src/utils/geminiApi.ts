@@ -47,14 +47,14 @@ export const geminiApi = {
   async generateContent(prompt: string): Promise<string> {
     const userKey = useSettingsStore.getState().geminiApiKey;
     const configKey = import.meta.env.VITE_GEMINI_API_KEY;
-    const activeKey = userKey || configKey;
+    const activeKey = (userKey || configKey || '').trim();
 
     if (!activeKey || activeKey === 'YOUR_API_KEY_HERE') {
       console.warn('Gemini API Key is missing. Returning mock response.');
       return this.getMockResponse(prompt);
     }
 
-    const apiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${activeKey}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeKey}`;
 
     try {
       const response = await fetch(apiUrl, {
@@ -65,15 +65,17 @@ export const geminiApi = {
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
         }),
-        signal: AbortSignal.timeout(10000)
+        signal: AbortSignal.timeout(15000)
       });
 
       if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Gemini API Details:', errorData);
         throw new Error(`API error: ${response.status}`);
       }
 
       const data = await response.json();
-      return data.candidates[0]?.content?.parts[0]?.text || 'No response generated.';
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated.';
     } catch (error) {
       console.error('Gemini API Error:', error);
       throw error;
