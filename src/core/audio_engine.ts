@@ -15,8 +15,7 @@ class AudioEngine {
       Howler.volume(state.volume);
     });
 
-    // Subscribe to currentTrack changes to auto-play when store changes
-    // This handles playNext/playPrevious triggering from the store
+    // Subscribe to currentTrack changes
     usePlayerStore.subscribe((state, prevState) => {
       if (
         state.currentTrack &&
@@ -26,11 +25,21 @@ class AudioEngine {
         this.play(state.currentTrack);
       }
     });
+
+    // Detect headset disconnection
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
+      navigator.mediaDevices.addEventListener('devicechange', () => {
+        // Pause playback when audio devices change (e.g. unplugging headphones)
+        // for better privacy and user experience.
+        if (usePlayerStore.getState().isPlaying) {
+          this.pause();
+        }
+      });
+    }
   }
 
   playAndStart(track: Track) {
     usePlayerStore.getState().playTrack(track);
-    // The subscribe above will detect the track change and call play()
   }
 
   play(track: Track) {
@@ -53,9 +62,12 @@ class AudioEngine {
       source: track.album === 'Cloud Storage' ? 'drive' : (track.album === 'Podcast Episode' ? 'podcast' : 'local')
     });
 
+    // Setup Media Session for Headsets/Hardware Controls
+    this.updateMediaSession(track);
+
     this.currentHowl = new Howl({
       src: [track.url],
-      html5: true, // Force HTML5 Audio to allow streaming large files
+      html5: true, 
       format: ['mp3', 'flac', 'wav', 'm4a', 'ogg'],
       volume: usePlayerStore.getState().volume,
       onplay: () => {
@@ -63,10 +75,16 @@ class AudioEngine {
         const duration = this.currentHowl?.duration() || 0;
         usePlayerStore.getState().setDuration(duration);
         this.startProgressTimer();
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.playbackState = 'playing';
+        }
       },
       onpause: () => {
         usePlayerStore.getState().pause();
         this.stopProgressTimer();
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.playbackState = 'paused';
+        }
       },
       onend: () => {
         const state = usePlayerStore.getState();
@@ -74,12 +92,9 @@ class AudioEngine {
         state.setProgress(0);
         state.setCurrentTime(0);
         
-        // Handle next track logic
         if (state.repeatMode === 'one') {
           this.play(track);
         } else {
-          // playNext updates currentTrack in the store,
-          // and our subscribe callback will call play() automatically
           state.playNext();
         }
       },
@@ -92,6 +107,44 @@ class AudioEngine {
     });
 
     this.currentHowl.play();
+  }
+
+  private updateMediaSession(track: Track) {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: track.title,
+        artist: track.artist,
+        album: track.album || 'Omed Player',
+        artwork: track.artworkUrl ? [
+          { src: track.artworkUrl, sizes: '96x96',   type: 'image/png' },
+          { src: track.artworkUrl, sizes: '128x128', type: 'image/png' },
+          { src: track.artworkUrl, sizes: '192x192', type: 'image/png' },
+          { src: track.artworkUrl, sizes: '256x256', type: 'image/png' },
+          { src: track.artworkUrl, sizes: '384x384', type: 'image/png' },
+          { src: track.artworkUrl, sizes: '512x512', type: 'image/png' },
+        ] : []
+      });
+
+      const actions: MediaSessionAction[] = ['play', 'pause', 'previoustrack', 'nexttrack', 'seekto'];
+      
+      actions.forEach(action => {
+        try {
+          navigator.mediaSession.setActionHandler(action, (details) => {
+            switch (action) {
+              case 'play': this.resume(); break;
+              case 'pause': this.pause(); break;
+              case 'previoustrack': usePlayerStore.getState().playPrevious(); break;
+              case 'nexttrack': usePlayerStore.getState().playNext(); break;
+              case 'seekto': 
+                if (details.seekTime !== undefined) this.seek(details.seekTime);
+                break;
+            }
+          });
+        } catch (e) {
+          console.warn(`Action ${action} not supported.`);
+        }
+      });
+    }
   }
 
   pause() {
@@ -144,8 +197,18 @@ class AudioEngine {
         if (duration > 0) {
           usePlayerStore.getState().setProgress(currentTime / duration);
         }
+        
+        if ('mediaSession' in navigator && (navigator.mediaSession as any).setPositionState) {
+          try {
+            (navigator.mediaSession as any).setPositionState({
+              duration: duration,
+              playbackRate: 1,
+              position: currentTime
+            });
+          } catch (e) {}
+        }
       }
-    }, 500);
+    }, 1000);
   }
 
   private stopProgressTimer() {
