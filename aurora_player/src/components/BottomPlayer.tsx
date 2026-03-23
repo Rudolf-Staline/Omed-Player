@@ -1,17 +1,19 @@
-import React, { useCallback, useEffect, useRef } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Maximize2, Repeat, Shuffle, Heart } from 'lucide-react';
-import { motion } from 'framer-motion';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Maximize2, Repeat, Shuffle, Heart, ListMusic } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useFavoritesStore } from '../store/useFavoritesStore';
 import { audioEngine } from '../core/audio_engine';
+import { QueuePanel } from './QueuePanel';
 
 import { useSettingsStore } from '../store/useSettingsStore';
 
 export const BottomPlayer: React.FC = () => {
-  const { currentTrack, isPlaying, progress, currentTime, duration, volume, repeatMode, isShuffle, playNext, playPrevious, toggleShuffle, toggleRepeatMode } = usePlayerStore();
+  const { currentTrack, isPlaying, progress, currentTime, duration, volume, repeatMode, isShuffle, playNext, playPrevious, toggleShuffle, toggleRepeatMode, queue } = usePlayerStore();
   const { trackIds: favorites, toggleTrackFavorite: toggleFavorite } = useFavoritesStore();
   const { animationsEnabled } = useSettingsStore();
   const prevTrackId = useRef<string | undefined>(undefined);
+  const [showQueue, setShowQueue] = useState(false);
 
   useEffect(() => {
     if (currentTrack && currentTrack.id !== prevTrackId.current) {
@@ -143,7 +145,18 @@ export const BottomPlayer: React.FC = () => {
         </div>
 
         {/* Secondary Controls */}
-        <div className="flex w-1/4 items-center justify-end gap-4">
+        <div className="flex w-1/4 items-center justify-end gap-4 relative">
+          <button
+            className={`text-text-muted hover:text-text-primary transition-colors relative ${showQueue ? 'text-accent-cyan' : ''}`}
+            onClick={() => setShowQueue(!showQueue)}
+          >
+            <ListMusic size={18} />
+            {queue.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-accent-cyan text-bg-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                {queue.length}
+              </span>
+            )}
+          </button>
           <button className="text-text-muted hover:text-text-primary transition-colors">
             <Volume2 size={18} />
           </button>
@@ -162,6 +175,20 @@ export const BottomPlayer: React.FC = () => {
         </div>
 
       </div>
+
+      <AnimatePresence>
+        {showQueue && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.2 }}
+            className="absolute bottom-full right-0 mb-4 mr-6"
+          >
+            <QueuePanel onClose={() => setShowQueue(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

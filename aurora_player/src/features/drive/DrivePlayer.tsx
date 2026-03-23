@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Cloud, Loader2, Music, RefreshCw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { requireDriveAuth, scanAllAudioFiles } from '../../utils/googleDriveApi';
+import { requireDriveAuth, scanAllAudioFiles, getDriveAudioStreamUrl } from '../../utils/googleDriveApi';
 import { loadFromCloud, saveToCloud } from '../../utils/auroraSync';
 import { usePlayerStore, type Track } from '../../store/usePlayerStore';
 import { TrackList } from '../music/TrackList';
@@ -36,6 +36,7 @@ export const DrivePlayer: React.FC = () => {
   const [lastScanned, setLastScanned] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [visibleCount, setVisibleCount] = useState(50);
+  const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const { setLocalTracks } = usePlayerStore();
 
@@ -53,6 +54,20 @@ export const DrivePlayer: React.FC = () => {
       setError(err.message || 'Authentication error.');
     } finally {
       setIsScanning(false);
+    }
+  };
+
+  const handlePlayDriveTrack = async (track: Track) => {
+    if (!token) return;
+    try {
+      setLoadingTrackId(track.id);
+      const blobUrl = await getDriveAudioStreamUrl(track.id, token);
+      const resolvedTrack = { ...track, url: blobUrl };
+      usePlayerStore.getState().playTrack(resolvedTrack);
+    } catch (err) {
+      toast.error('Could not load this track from Drive.');
+    } finally {
+      setLoadingTrackId(null);
     }
   };
 
@@ -223,14 +238,18 @@ export const DrivePlayer: React.FC = () => {
                   </div>
               ) : (
                   <>
-                      <TrackList tracks={files.slice(0, visibleCount).map(file => ({
-                          id: file.id,
-                          title: file.name.replace(/\.[^/.]+$/, ""),
-                          artist: 'Google Drive',
-                          album: 'Cloud Storage',
-                          url: '', // We resolve URL when played through store context if using localTracks
-                          duration: 0
-                      }))} />
+                      <TrackList
+                          tracks={files.slice(0, visibleCount).map(file => ({
+                              id: file.id,
+                              title: file.name.replace(/\.[^/.]+$/, ""),
+                              artist: 'Google Drive',
+                              album: 'Cloud Storage',
+                              url: '',
+                              duration: 0
+                          }))}
+                          onPlayContext={handlePlayDriveTrack}
+                          loadingTrackId={loadingTrackId}
+                      />
                       <div ref={sentinelRef} className="h-4" />
                   </>
               )}
