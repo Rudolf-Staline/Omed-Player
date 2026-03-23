@@ -13,7 +13,7 @@ export const geminiApi = {
    * @returns A Promise resolving to the summary text.
    */
   async summarizePodcast(title: string, description: string): Promise<string> {
-    const prompt = `Act as an expert podcast summarizer. Provide a concise, 3-point bulleted summary of the following podcast episode.\nTitle: ${title}\nDescription: ${description}`;
+    const prompt = `Agis comme un expert en résumé de podcasts. Fournis un résumé concis en 3 points à puces de l'épisode suivant. Réponds UNIQUEMENT en français.\nTitre: ${title}\nDescription: ${description}`;
     return this.generateContent(prompt);
   },
 
@@ -25,7 +25,7 @@ export const geminiApi = {
    * @returns A Promise resolving to a single word indicating the mood.
    */
   async detectMood(title: string, artist: string, tags: string[] = []): Promise<string> {
-    const prompt = `Based on the following song metadata, suggest a single primary mood category (e.g., Relax, Focus, Energy, Sad, Upbeat, Chill). Respond with ONLY the mood category word.\nTitle: ${title}\nArtist: ${artist}\nTags: ${tags.join(', ')}`;
+    const prompt = `Basé sur les métadonnées de la chanson suivante, suggère une seule catégorie d'humeur principale (ex: Relax, Focus, Énergie, Triste, Entraînant, Calme). Réponds avec UN SEUL mot en français.\nTitre: ${title}\nArtiste: ${artist}\nTags: ${tags.join(', ')}`;
     return this.generateContent(prompt);
   },
 
@@ -35,7 +35,7 @@ export const geminiApi = {
    * @returns A Promise resolving to a list of recommendations.
    */
   async getSmartRecommendations(history: string[]): Promise<string> {
-    const prompt = `Based on the user's listening history, suggest 5 similar artists, podcasts, or genres they might enjoy. Format as a clean, bulleted list.\nHistory: ${history.join(', ')}`;
+    const prompt = `Basé sur l'historique d'écoute de l'utilisateur, suggère 5 artistes, podcasts ou genres similaires qu'il pourrait apprécier. Formate comme une liste à puces propre. Réponds UNIQUEMENT en français.\nHistorique: ${history.join(', ')}`;
     return this.generateContent(prompt);
   },
 
@@ -86,15 +86,20 @@ export const geminiApi = {
    * Fallback mock responses when API key is not configured.
    */
   getMockResponse(prompt: string): string {
-    if (prompt.includes('summarize')) {
-      return "• Key takeaway 1: Introduction to the topic.\n• Key takeaway 2: In-depth discussion of main points.\n• Key takeaway 3: Conclusion and future outlook.";
+    const isFrench = prompt.toLowerCase().includes('français') || prompt.toLowerCase().includes('french');
+    if (prompt.includes('résumé') || prompt.includes('summarize')) {
+      return isFrench 
+        ? "• Point clé 1 : Introduction au sujet.\n• Point clé 2 : Discussion approfondie des points principaux.\n• Point clé 3 : Conclusion et perspectives d'avenir."
+        : "• Key takeaway 1: Introduction to the topic.\n• Key takeaway 2: In-depth discussion of main points.\n• Key takeaway 3: Conclusion and future outlook.";
     }
-    if (prompt.includes('mood')) {
-      return "Chill";
+    if (prompt.includes('humeur') || prompt.includes('mood')) {
+      return isFrench ? "Calme" : "Chill";
     }
-    if (prompt.includes('history')) {
+    if (prompt.includes('historique') || prompt.includes('history')) {
       return "1. The Midnight\n2. Kavinsky\n3. FM-84\n4. Gunship\n5. Timecop1983";
     }
-    return "This is a mock response from the Gemini AI scaffold.";
+    return isFrench 
+        ? "Ceci est une réponse simulée de l'IA Omed."
+        : "This is a mock response from the Omed AI scaffold.";
   }
 };

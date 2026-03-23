@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Play, Loader2, ArrowLeft, Heart, RefreshCw, Bell, BellOff, CheckCircle } from 'lucide-react';
+import { Play, Loader2, ArrowLeft, Heart, RefreshCw, Bell, BellOff, CheckCircle, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { parseRSSFeed, type PodcastEpisode } from '../../utils/rssParser';
 import { type Track } from '../../store/usePlayerStore';
@@ -92,7 +92,7 @@ export const PodcastDetail: React.FC = () => {
               collectionName: podcast.collectionName,
               artistName: podcast.artistName,
               artworkUrl600: podcast.artworkUrl600,
-              feedUrl: podcast.feedUrl // NOTE: if feedUrl was missing and fetched, we should ideally save the fetched one, but we use what we have in state
+              feedUrl: podcast.feedUrl
           });
       }
   };
@@ -102,8 +102,8 @@ export const PodcastDetail: React.FC = () => {
   if (!podcast) {
     return (
       <div className="flex flex-col items-center justify-center h-full space-y-4">
-        <p className="text-text-muted">No podcast selected.</p>
-        <button onClick={() => navigate('/podcasts')} className="text-accent-cyan hover:underline">Go back to Search</button>
+        <p className="text-text-muted">Aucun podcast sélectionné.</p>
+        <button onClick={() => navigate('/podcasts')} className="text-accent-cyan hover:underline">Retour à la recherche</button>
       </div>
     );
   }
@@ -115,7 +115,7 @@ export const PodcastDetail: React.FC = () => {
         className="flex items-center gap-2 text-text-muted hover:text-text-primary transition-colors bg-white/5 px-4 py-2 rounded-lg w-fit"
       >
         <ArrowLeft size={18} />
-        Back
+        Retour
       </button>
 
       <div className="flex flex-col md:flex-row gap-8 items-start">
@@ -133,44 +133,46 @@ export const PodcastDetail: React.FC = () => {
              {isSub ? (
                  <>
                      <BellOff size={20} />
-                     Unsubscribe
+                     Se désabonner
                  </>
              ) : (
                  <>
                      <Bell size={20} />
-                     Subscribe
+                     S'abonner
                  </>
              )}
           </button>
 
           <div className="flex flex-wrap gap-2 mb-6">
              {podcast.genres?.slice(0, 3).map((genre: string, i: number) => (
-               <span key={i} className="text-xs font-medium px-2 py-1 bg-white/10 rounded-full text-text-primary">{genre}</span>
+                <span key={i} className="text-xs font-medium px-2 py-1 bg-white/10 rounded-full text-text-primary">{genre}</span>
              ))}
           </div>
+        </div>
 
+        <div className="w-full md:w-2/3">
           {summary && (
-            <div className="p-5 bg-gradient-to-br from-white/5 to-white/15 rounded-2xl border border-white/10 text-sm text-text-muted mt-8 shadow-xl">
+            <div className="p-6 bg-glass rounded-2xl border border-white/10 text-sm text-text-muted mb-8 shadow-xl relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-1 h-full bg-accent-cyan opacity-80 group-hover:opacity-100 transition-opacity" />
                 <h3 className="font-semibold text-text-primary mb-3 flex items-center gap-2 text-base">
-                    <span className="text-accent-cyan animate-pulse">✨</span> Smart Insight
+                    <Sparkles size={20} className="text-accent-cyan animate-pulse" />
+                    Analyse de l'IA
                 </h3>
-                <div className="whitespace-pre-wrap max-h-[350px] overflow-y-auto pr-3 text-xs leading-relaxed custom-scrollbar opacity-90">
+                <div className="whitespace-pre-wrap text-sm leading-relaxed text-text-primary/90">
                    {summary}
                 </div>
             </div>
           )}
-        </div>
-
-        <div className="w-full md:w-2/3">
+          
           <div className="flex items-center justify-between mb-6 border-b border-white/5 pb-2">
-            <h2 className="text-xl font-display font-semibold">Episodes</h2>
+            <h2 className="text-xl font-display font-semibold">Épisodes</h2>
             {isSub && !loading && episodes.length > 0 && (
                <div className="bg-white/10 px-3 py-1 rounded-full text-sm font-medium text-accent-cyan flex items-center gap-2">
                  <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-cyan opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-cyan"></span>
                  </span>
-                 {unplayedCount} unplayed
+                 {unplayedCount} nouveaux non joués
                </div>
             )}
           </div>
@@ -189,7 +191,7 @@ export const PodcastDetail: React.FC = () => {
                 className="flex items-center gap-2 bg-accent-rose text-bg-primary px-4 py-2 rounded-lg font-medium hover:bg-accent-rose/80 transition-colors"
               >
                 <RefreshCw size={16} />
-                Retry Connection
+                Réessayer la connexion
               </button>
             </div>
           )}
@@ -221,14 +223,14 @@ export const PodcastDetail: React.FC = () => {
                       <button 
                         onClick={(e) => { e.stopPropagation(); toggleFavorite(episode.id); }}
                         className={`transition-colors p-2 rounded-full opacity-0 group-hover:opacity-100 ${favorites.includes(episode.id) ? 'text-accent-rose opacity-100' : 'text-text-muted hover:text-accent-rose hover:bg-white/5'}`}
-                        title="Add to Favorites"
+                        title="Ajouter aux favoris"
                       >
                         <Heart size={20} fill={favorites.includes(episode.id) ? 'currentColor' : 'none'} />
                       </button>
                       <button 
                         onClick={(e) => { e.stopPropagation(); markAsPlayed(episode.id); }}
                         className={`transition-colors p-2 rounded-full ${isPlayed ? 'text-accent-cyan opacity-100' : 'text-text-muted hover:text-accent-cyan hover:bg-white/5 opacity-0 group-hover:opacity-100'}`}
-                        title={isPlayed ? "Played" : "Mark as Played"}
+                        title={isPlayed ? "Lu" : "Marquer comme lu"}
                       >
                          <CheckCircle size={20} />
                       </button>
@@ -241,14 +243,14 @@ export const PodcastDetail: React.FC = () => {
               {episodes.length > 0 && (
                 <div className="flex flex-col items-center pt-8 pb-4 gap-4">
                   <span className="text-sm text-text-muted font-mono">
-                    Showing {Math.min(visibleCount, episodes.length)} of {episodes.length} episodes
+                    Affichage de {Math.min(visibleCount, episodes.length)} sur {episodes.length} épisodes
                   </span>
                   {episodes.length > visibleCount && (
                     <button 
                       onClick={() => setVisibleCount(prev => prev + 50)}
                       className="px-6 py-2 bg-white/5 hover:bg-white/10 text-text-primary rounded-xl font-medium transition-all shadow-lg hover:shadow-xl border border-white/5"
                     >
-                      Load more episodes
+                      Afficher plus d'épisodes
                     </button>
                   )}
                 </div>
