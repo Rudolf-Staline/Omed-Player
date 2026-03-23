@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-primary: #0A0A14;
+  --color-bg-secondary: #11111E;
+  --color-accent-cyan: #00E5FF;
+  --color-accent-violet: #A855F7;
+  --color-accent-rose: #F472B6;
+  --color-text-primary: #F0F0FF;
+  --color-text-muted: #6B7280;
+
+  --font-display: 'Clash Display', 'Syne', sans-serif;
+  --font-body: 'DM Sans', 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+@layer base {
+  :root {
+    --bg-primary: #0A0A14;
+    --bg-secondary: #11111E;
+    --bg-glass: rgba(255,255,255,0.04);
+    --accent-cyan: #00E5FF;
+    --accent-violet: #A855F7;
+    --accent-rose: #F472B6;
+    --text-primary: #F0F0FF;
+    --text-muted: #6B7280;
+    --border: rgba(255,255,255,0.08);
+    --glow-cyan: 0 0 20px rgba(0,229,255,0.3);
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+}
+
+@layer utilities {
+  .bg-glass {
+    background-color: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  .glow-cyan {
+    box-shadow: var(--glow-cyan);
+  }
+
+  .text-shadow-aurora {
+    text-shadow: 0 0 10px var(--accent-cyan);
+  }
+}
