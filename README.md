@@ -52,7 +52,6 @@ Omed Player is a premium, high-performance web-based audio and video player desi
    Create a `.env` file in the root directory:
    ```env
    VITE_GOOGLE_CLIENT_ID=your_google_client_id
-   VITE_GEMINI_API_KEY=your_gemini_api_key
    ```
 
 4. **Run in development mode**:
