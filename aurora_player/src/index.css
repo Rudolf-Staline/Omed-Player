@@ -16,6 +16,7 @@
 
 @layer base {
   :root {
+    /* Aurora theme (default) */
     --bg-primary: #0A0A14;
     --bg-secondary: #11111E;
     --bg-glass: rgba(255,255,255,0.04);
@@ -28,6 +29,26 @@
     --glow-cyan: 0 0 20px rgba(0,229,255,0.3);
   }
 
+  [data-theme="sunset"] {
+    --bg-primary: #110A0A;
+    --bg-secondary: #1E1111;
+    --accent-cyan: #FF7B00;
+    --accent-violet: #F472B6;
+    --accent-rose: #FF3366;
+    --text-primary: #FFF0F5;
+    --glow-cyan: 0 0 20px rgba(255,123,0,0.3);
+  }
+
+  [data-theme="forest"] {
+    --bg-primary: #080F0A;
+    --bg-secondary: #111E14;
+    --accent-cyan: #10B981;
+    --accent-violet: #FBBF24;
+    --accent-rose: #34D399;
+    --text-primary: #F0FFF5;
+    --glow-cyan: 0 0 20px rgba(16,185,129,0.3);
+  }
+
   body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
@@ -37,6 +58,10 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
   }
+
+  html.compact { font-size: 14px; }
+  html.normal { font-size: 16px; }
+  html.comfortable { font-size: 18px; }
 }
 
 @layer utilities {

@@ -11,10 +11,19 @@ export const VideoPlayer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [showControls, setShowControls] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
 
   let controlsTimeout: number | undefined;
+
+  const formatTime = (timeInSeconds: number) => {
+    if (!timeInSeconds || isNaN(timeInSeconds)) return "0:00";
+    const mins = Math.floor(timeInSeconds / 60);
+    const secs = Math.floor(timeInSeconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleFileSelect = (file: File) => {
     if (file && file.type.startsWith('video/')) {
@@ -88,8 +97,13 @@ export const VideoPlayer: React.FC = () => {
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
-      const p = (videoRef.current.currentTime / videoRef.current.duration) * 100;
-      setProgress(p);
+      const current = videoRef.current.currentTime;
+      const total = videoRef.current.duration;
+      setCurrentTime(current);
+      setDuration(total);
+      if (total > 0) {
+        setProgress((current / total) * 100);
+      }
     }
   };
 
@@ -193,18 +207,22 @@ export const VideoPlayer: React.FC = () => {
                 <h3 className="text-white font-medium px-2">{videoTitle}</h3>
 
             {/* Progress Bar */}
-            <div
-              className="h-1.5 w-full bg-white/20 rounded-full cursor-pointer relative group-hover/progress:h-2 transition-all"
-              onClick={handleProgressClick}
-            >
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-white font-mono w-10 text-right">{formatTime(currentTime)}</span>
               <div
-                className="absolute top-0 left-0 h-full bg-accent-cyan rounded-full glow-cyan"
-                style={{ width: `${progress}%` }}
-              />
+                className="flex-1 h-1.5 bg-white/20 rounded-full cursor-pointer relative group-hover/progress:h-2 transition-all"
+                onClick={handleProgressClick}
+              >
+                <div
+                  className="absolute top-0 left-0 h-full bg-accent-cyan rounded-full glow-cyan pointer-events-none"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <span className="text-xs text-white font-mono w-10">{formatTime(duration)}</span>
             </div>
 
             {/* Buttons */}
-                <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center justify-between pt-1">
                   <div className="flex items-center gap-4">
                     <button onClick={togglePlay} className="text-white hover:text-accent-cyan transition-colors">
                       {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}

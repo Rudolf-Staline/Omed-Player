@@ -6,14 +6,9 @@ import { Library } from './features/music/Library';
 import { PodcastSearch } from './features/podcasts/PodcastSearch';
 import { PodcastDetail } from './features/podcasts/PodcastDetail';
 import { VideoPlayer } from './features/video/VideoPlayer';
-
-// A simple placeholder for settings page
-const SettingsPage: React.FC = () => (
-  <div className="space-y-6">
-    <h1 className="text-3xl font-display font-bold text-text-primary">Settings</h1>
-    <p className="text-text-muted">Configuration options will go here.</p>
-  </div>
-);
+import { SettingsPage } from './features/settings/SettingsPage';
+import { FavoritesPage } from './features/music/FavoritesPage';
+import { useSettingsStore } from './store/useSettingsStore';
 
 const pageVariants = {
   initial: { opacity: 0, y: 10, filter: 'blur(4px)' },
@@ -27,24 +22,38 @@ const pageTransition: any = {
   duration: 0.25
 };
 
-const AnimatedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <motion.div
-    initial="initial"
-    animate="in"
-    exit="out"
-    variants={pageVariants}
-    transition={pageTransition}
-  >
-    {children}
-  </motion.div>
-);
+const AnimatedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { animationsEnabled } = useSettingsStore();
+
+  if (!animationsEnabled) {
+    return <>{children}</>;
+  }
+
+  return (
+    <motion.div
+      initial="initial"
+      animate="in"
+      exit="out"
+      variants={pageVariants}
+      transition={pageTransition}
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 function App() {
   const location = useLocation();
+  const { theme, density, animationsEnabled } = useSettingsStore();
+
+  React.useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.className = density;
+  }, [theme, density]);
 
   return (
     <Layout>
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait" initial={animationsEnabled}>
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<Navigate to="/music" replace />} />
           <Route path="/music" element={<AnimatedRoute><Library /></AnimatedRoute>} />
@@ -52,6 +61,8 @@ function App() {
           <Route path="/podcasts/:id" element={<AnimatedRoute><PodcastDetail /></AnimatedRoute>} />
           <Route path="/video" element={<AnimatedRoute><VideoPlayer /></AnimatedRoute>} />
           <Route path="/settings" element={<AnimatedRoute><SettingsPage /></AnimatedRoute>} />
+          <Route path="/local-files" element={<Navigate to="/music" replace />} />
+          <Route path="/favorites" element={<AnimatedRoute><FavoritesPage /></AnimatedRoute>} />
           {/* Fallback for unhandled routes */}
           <Route path="*" element={<AnimatedRoute><div className="text-text-muted mt-8 text-center">Page Not Found or Not Implemented Yet</div></AnimatedRoute>} />
         </Routes>

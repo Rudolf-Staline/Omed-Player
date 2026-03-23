@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Loader2, ArrowLeft } from 'lucide-react';
+import { Play, Loader2, ArrowLeft, Heart } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { parseRSSFeed, type PodcastEpisode } from '../../utils/rssParser';
 import { audioEngine } from '../../core/audio_engine';
-import { type Track } from '../../store/usePlayerStore';
+import { usePlayerStore, type Track } from '../../store/usePlayerStore';
 import { geminiApi } from '../../utils/geminiApi';
 
 export const PodcastDetail: React.FC = () => {
@@ -15,6 +15,7 @@ export const PodcastDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [summary, setSummary] = useState('');
+  const { favorites, toggleFavorite } = usePlayerStore();
 
   useEffect(() => {
     if (!podcast || !podcast.feedUrl) {
@@ -133,6 +134,12 @@ export const PodcastDetail: React.FC = () => {
                         )}
                       </div>
                     </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleFavorite(episode.id); }}
+                      className={`shrink-0 transition-colors self-center p-2 rounded-full opacity-0 group-hover:opacity-100 ${favorites.includes(episode.id) ? 'text-accent-rose opacity-100' : 'text-text-muted hover:text-accent-rose hover:bg-white/5'}`}
+                    >
+                      <Heart size={20} fill={favorites.includes(episode.id) ? 'currentColor' : 'none'} />
+                    </button>
                   </div>
                 </div>
               ))}

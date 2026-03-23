@@ -1,11 +1,14 @@
 import React, { useCallback } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Maximize2, Repeat, Shuffle } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Maximize2, Repeat, Shuffle, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { audioEngine } from '../core/audio_engine';
 
+import { useSettingsStore } from '../store/useSettingsStore';
+
 export const BottomPlayer: React.FC = () => {
-  const { currentTrack, isPlaying, progress, currentTime, duration, volume } = usePlayerStore();
+  const { currentTrack, isPlaying, progress, currentTime, duration, volume, favorites, toggleFavorite } = usePlayerStore();
+  const { animationsEnabled } = useSettingsStore();
 
   const formatTime = (timeInSeconds: number) => {
     const mins = Math.floor(timeInSeconds / 60);
@@ -38,7 +41,7 @@ export const BottomPlayer: React.FC = () => {
 
   return (
     <motion.div
-      initial={{ y: '100%' }}
+      initial={animationsEnabled ? { y: '100%' } : false}
       animate={{ y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       className="h-24 w-full border-t border-white/10 bg-glass px-6 py-2 shadow-2xl backdrop-blur-xl z-50"
@@ -62,6 +65,14 @@ export const BottomPlayer: React.FC = () => {
               {currentTrack?.artist || 'Unknown Artist'}
             </p>
           </div>
+          {currentTrack && (
+            <button
+              onClick={() => toggleFavorite(currentTrack.id)}
+              className={`transition-colors ml-2 ${favorites.includes(currentTrack.id) ? 'text-accent-rose' : 'text-text-muted hover:text-accent-rose'}`}
+            >
+              <Heart size={18} fill={favorites.includes(currentTrack.id) ? 'currentColor' : 'none'} />
+            </button>
+          )}
         </div>
 
         {/* Player Controls */}
