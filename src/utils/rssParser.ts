@@ -16,18 +16,12 @@ export const parseRSSFeed = async (url: string, defaultArtwork?: string, podcast
     const isDev = import.meta.env.DEV;
     const corsProxyUrl = isDev 
         ? `/raw-proxy?url=${encodeURIComponent(url)}`
-        : `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+        : `https://corsproxy.io/?${encodeURIComponent(url)}`;
     
-    const response = await fetch(corsProxyUrl, { signal: AbortSignal.timeout(10000) });
+    const response = await fetch(corsProxyUrl, { signal: AbortSignal.timeout(15000) });
     if (!response.ok) throw new Error(`Failed to fetch RSS feed with status ${response.status}`);
     
-    let xmlText = '';
-    if (isDev) {
-        xmlText = await response.text();
-    } else {
-        const data = await response.json();
-        xmlText = data.contents;
-    }
+    const xmlText = await response.text();
     
     if (!xmlText) {
         throw new Error('Failed to load RSS feed contents');
