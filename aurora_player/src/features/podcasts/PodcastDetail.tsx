@@ -16,7 +16,7 @@ export const PodcastDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [summary, setSummary] = useState('');
-  const [visibleCount, setVisibleCount] = useState(200);
+  const [visibleCount, setVisibleCount] = useState(300);
   const { episodeIds: favorites, toggleEpisodeFavorite: toggleFavorite } = useFavoritesStore();
   const { isSubscribed, subscribe, unsubscribe, playedEpisodes, markAsPlayed } = usePodcastStore();
 
@@ -236,14 +236,19 @@ export const PodcastDetail: React.FC = () => {
                 );
               })}
 
-              {episodes.length > visibleCount && (
-                <div className="flex justify-center pt-8 pb-4">
-                  <button
-                    onClick={() => setVisibleCount(prev => prev + 200)}
-                    className="px-6 py-2 bg-white/5 hover:bg-white/10 text-text-primary rounded-xl font-medium transition-all shadow-lg hover:shadow-xl border border-white/5"
-                  >
-                    Load more episodes
-                  </button>
+              {episodes.length > 0 && (
+                <div className="flex flex-col items-center pt-8 pb-4 gap-4">
+                  <span className="text-sm text-text-muted font-mono">
+                    Showing {Math.min(visibleCount, episodes.length)} of {episodes.length} episodes
+                  </span>
+                  {episodes.length > visibleCount && (
+                    <button
+                      onClick={() => setVisibleCount(prev => prev + 50)}
+                      className="px-6 py-2 bg-white/5 hover:bg-white/10 text-text-primary rounded-xl font-medium transition-all shadow-lg hover:shadow-xl border border-white/5"
+                    >
+                      Load more episodes
+                    </button>
+                  )}
                 </div>
               )}
             </div>

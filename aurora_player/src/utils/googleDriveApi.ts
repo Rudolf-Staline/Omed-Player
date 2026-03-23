@@ -3,7 +3,7 @@ const SCOPES = 'https://www.googleapis.com/auth/drive.readonly https://www.googl
 export const initGoogleDriveAuth = (): Promise<string | null> => {
   return new Promise((resolve) => {
     // If we already have a token, just return it
-    const token = sessionStorage.getItem('gdrive_token');
+    const token = localStorage.getItem('aurora_auth_token');
     if (token) {
         resolve(token);
         return;
@@ -22,7 +22,7 @@ export const initGoogleDriveAuth = (): Promise<string | null> => {
             console.error('Google Auth Error:', response);
             resolve(null);
           } else {
-            sessionStorage.setItem('gdrive_token', response.access_token);
+            localStorage.setItem('aurora_auth_token', response.access_token);
             resolve(response.access_token);
           }
         },
@@ -36,7 +36,7 @@ export const initGoogleDriveAuth = (): Promise<string | null> => {
 
 export const requireDriveAuth = (): Promise<string | null> => {
   return new Promise((resolve) => {
-    const token = sessionStorage.getItem('gdrive_token');
+    const token = localStorage.getItem('aurora_auth_token');
     if (token) return resolve(token);
 
     if (!(window as any).google) return resolve(null); // Should be loaded by init
@@ -48,7 +48,7 @@ export const requireDriveAuth = (): Promise<string | null> => {
           if (response.error !== undefined) {
             resolve(null);
           } else {
-            sessionStorage.setItem('gdrive_token', response.access_token);
+            localStorage.setItem('aurora_auth_token', response.access_token);
             resolve(response.access_token);
           }
         },
@@ -80,6 +80,47 @@ export const fetchDriveAudioFiles = async (token: string) => {
     if (!res.ok) throw new Error('Failed to fetch from Drive');
     const data = await res.json();
     return data.files || [];
+};
+
+export const scanAllAudioFiles = async (
+    token: string,
+    onPageLoaded: (newFiles: any[]) => void
+): Promise<any[]> => {
+    const allFiles: any[] = [];
+    let pageToken: string | undefined;
+
+    do {
+        const query = encodeURIComponent("mimeType contains 'audio/' and trashed=false");
+        const url = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=nextPageToken,files(id,name,mimeType,size,modifiedTime,parents)&pageSize=100${pageToken ? `&pageToken=${pageToken}` : ''}`;
+
+        const res = await fetch(url, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        handleApiError(res);
+        if (!res.ok) throw new Error('Failed to fetch from Drive');
+
+        const data = await res.json();
+        const newFiles = data.files || [];
+        allFiles.push(...newFiles);
+        onPageLoaded(newFiles);
+
+        pageToken = data.nextPageToken;
+    } while (pageToken);
+
+    return allFiles;
+};
+
+export const verifyFile = async (fileId: string, token: string): Promise<boolean> => {
+    try {
+        const res = await fetch(
+            `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id`,
+            { method: 'GET', headers: { Authorization: `Bearer ${token}` } }
+        );
+        return res.ok;
+    } catch {
+        return false;
+    }
 };
 
 const audioBlobCache = new Map<string, string>();
