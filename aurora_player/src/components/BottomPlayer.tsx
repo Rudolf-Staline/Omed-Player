@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Maximize2, Repeat, Shuffle } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { audioEngine } from '../core/audio_engine';
 
@@ -36,7 +37,12 @@ export const BottomPlayer: React.FC = () => {
   }, []);
 
   return (
-    <div className="h-24 w-full border-t border-white/10 bg-glass px-6 py-2 shadow-2xl backdrop-blur-xl z-50">
+    <motion.div
+      initial={{ y: '100%' }}
+      animate={{ y: 0 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      className="h-24 w-full border-t border-white/10 bg-glass px-6 py-2 shadow-2xl backdrop-blur-xl z-50"
+    >
       <div className="mx-auto flex h-full max-w-screen-2xl items-center justify-between">
 
         {/* Track Info */}
@@ -120,6 +126,6 @@ export const BottomPlayer: React.FC = () => {
         </div>
 
       </div>
-    </div>
+    </motion.div>
   );
 };

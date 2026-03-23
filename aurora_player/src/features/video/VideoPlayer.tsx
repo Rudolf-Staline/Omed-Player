@@ -1,26 +1,72 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { Play, Pause, Maximize, PictureInPicture, Volume2, VolumeX } from 'lucide-react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { Play, Pause, Maximize, PictureInPicture, Volume2, VolumeX, Upload } from 'lucide-react';
 
-interface VideoPlayerProps {
-  src?: string;
-  poster?: string;
-  title?: string;
-}
-
-export const VideoPlayer: React.FC<VideoPlayerProps> = ({
-  src = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-  poster = "https://peach.blender.org/wp-content/uploads/title_anouncement.jpg",
-  title = "Big Buck Bunny"
-}) => {
+export const VideoPlayer: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [videoSrc, setVideoSrc] = useState<string>('');
+  const [videoTitle, setVideoTitle] = useState<string>('Select or drag a video file');
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showControls, setShowControls] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
 
   let controlsTimeout: number | undefined;
+
+  const handleFileSelect = (file: File) => {
+    if (file && file.type.startsWith('video/')) {
+      if (videoSrc) {
+        URL.revokeObjectURL(videoSrc);
+      }
+      const url = URL.createObjectURL(file);
+      setVideoSrc(url);
+      setVideoTitle(file.name);
+      setIsPlaying(true);
+      if (videoRef.current) {
+        videoRef.current.src = url;
+        videoRef.current.play();
+      }
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (controlsTimeout) clearTimeout(controlsTimeout);
+      if (videoSrc) URL.revokeObjectURL(videoSrc);
+    };
+  }, [videoSrc]);
+
+  const onDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const onDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const onDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileSelect(e.dataTransfer.files[0]);
+      e.dataTransfer.clearData();
+    }
+  }, []);
+
+  const handleInputClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      handleFileSelect(e.target.files[0]);
+    }
+  };
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -102,26 +148,49 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
       <div
         ref={containerRef}
-        className="relative w-full aspect-video bg-black rounded-xl overflow-hidden group shadow-2xl glow-cyan"
+        className={`relative w-full aspect-video bg-black rounded-xl overflow-hidden group shadow-2xl transition-all ${isDragging ? 'ring-2 ring-accent-cyan ring-offset-2 ring-offset-bg-primary' : 'glow-cyan'}`}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => isPlaying && setShowControls(false)}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
       >
-        <video
-          ref={videoRef}
-          src={src}
-          poster={poster}
-          className="w-full h-full object-cover"
-          onTimeUpdate={handleTimeUpdate}
-          onEnded={() => setIsPlaying(false)}
-          onClick={togglePlay}
-        />
+        {!videoSrc ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-text-muted bg-bg-secondary/50 border-2 border-dashed border-white/10 rounded-xl">
+             <Upload size={48} className="mb-4 opacity-50" />
+             <p className="text-lg mb-2">Drag and drop a video file here</p>
+             <p className="text-sm mb-4">or</p>
+             <button
+               onClick={handleInputClick}
+               className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-text-primary transition-colors"
+             >
+               Browse Files
+             </button>
+             <input
+               type="file"
+               ref={fileInputRef}
+               onChange={handleInputChange}
+               accept="video/*"
+               className="hidden"
+             />
+          </div>
+        ) : (
+          <>
+            <video
+              ref={videoRef}
+              src={videoSrc}
+              className="w-full h-full object-cover"
+              onTimeUpdate={handleTimeUpdate}
+              onEnded={() => setIsPlaying(false)}
+              onClick={togglePlay}
+            />
 
-        {/* Controls Overlay */}
-        <div
-          className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}
-        >
-          <div className="flex flex-col gap-2">
-            <h3 className="text-white font-medium px-2">{title}</h3>
+            {/* Controls Overlay */}
+            <div
+              className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}
+            >
+              <div className="flex flex-col gap-2">
+                <h3 className="text-white font-medium px-2">{videoTitle}</h3>
 
             {/* Progress Bar */}
             <div
@@ -135,35 +204,47 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             </div>
 
             {/* Buttons */}
-            <div className="flex items-center justify-between pt-2">
-              <div className="flex items-center gap-4">
-                <button onClick={togglePlay} className="text-white hover:text-accent-cyan transition-colors">
-                  {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
-                </button>
-                <button onClick={toggleMute} className="text-white hover:text-accent-cyan transition-colors">
-                  {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-                </button>
-              </div>
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center gap-4">
+                    <button onClick={togglePlay} className="text-white hover:text-accent-cyan transition-colors">
+                      {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
+                    </button>
+                    <button onClick={toggleMute} className="text-white hover:text-accent-cyan transition-colors">
+                      {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                    </button>
+                  </div>
 
-              <div className="flex items-center gap-4">
-                <button onClick={togglePiP} className="text-white hover:text-accent-cyan transition-colors" title="Picture in Picture">
-                  <PictureInPicture size={20} />
-                </button>
-                <button onClick={toggleFullScreen} className="text-white hover:text-accent-cyan transition-colors" title="Fullscreen">
-                  <Maximize size={20} />
-                </button>
+                  <div className="flex items-center gap-4">
+                    <button onClick={handleInputClick} className="text-white hover:text-accent-cyan transition-colors" title="Change Video">
+                      <Upload size={20} />
+                    </button>
+                    <button onClick={togglePiP} className="text-white hover:text-accent-cyan transition-colors" title="Picture in Picture">
+                      <PictureInPicture size={20} />
+                    </button>
+                    <button onClick={toggleFullScreen} className="text-white hover:text-accent-cyan transition-colors" title="Fullscreen">
+                      <Maximize size={20} />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Play Overlay (Big button when paused) */}
-        {!isPlaying && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="bg-black/50 p-4 rounded-full backdrop-blur-sm border border-white/10 glow-cyan">
-              <Play size={48} className="text-accent-cyan ml-2" fill="currentColor" />
-            </div>
-          </div>
+            {/* Play Overlay (Big button when paused) */}
+            {!isPlaying && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="bg-black/50 p-4 rounded-full backdrop-blur-sm border border-white/10 glow-cyan">
+                  <Play size={48} className="text-accent-cyan ml-2" fill="currentColor" />
+                </div>
+              </div>
+            )}
+            <input
+               type="file"
+               ref={fileInputRef}
+               onChange={handleInputChange}
+               accept="video/*"
+               className="hidden"
+             />
+          </>
         )}
       </div>
     </div>
