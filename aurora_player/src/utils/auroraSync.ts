@@ -12,7 +12,7 @@ const handleApiError = (res: Response) => {
 };
 
 export const saveToCloud = async (filename: string, data: any): Promise<void> => {
-    const token = sessionStorage.getItem('gdrive_token');
+    const token = localStorage.getItem('aurora_auth_token');
     if (!token) return;
 
     try {
@@ -59,7 +59,7 @@ export const saveToCloud = async (filename: string, data: any): Promise<void> =>
 };
 
 export const loadFromCloud = async (filename: string): Promise<any | null> => {
-    const token = sessionStorage.getItem('gdrive_token');
+    const token = localStorage.getItem('aurora_auth_token');
     if (!token) return null;
 
     try {

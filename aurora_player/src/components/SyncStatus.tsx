@@ -4,12 +4,12 @@ import { requireDriveAuth } from '../utils/googleDriveApi';
 
 export const SyncStatus: React.FC = () => {
     const [status, setStatus] = useState<'offline' | 'syncing' | 'synced' | 'connect'>(
-        sessionStorage.getItem('gdrive_token') ? 'synced' : 'connect'
+        localStorage.getItem('aurora_auth_token') ? 'synced' : 'connect'
     );
 
     useEffect(() => {
         const interval = setInterval(() => {
-            const token = sessionStorage.getItem('gdrive_token');
+            const token = localStorage.getItem('aurora_auth_token');
             if (token && status !== 'synced' && status !== 'syncing') {
                 setStatus('synced');
             } else if (!token && status !== 'connect') {
