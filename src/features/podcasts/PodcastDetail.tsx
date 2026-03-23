@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Play, Loader2, ArrowLeft, Heart, RefreshCw, Bell, BellOff, CheckCircle, Sparkles } from 'lucide-react';
+import { Play, Loader2, ArrowLeft, Heart, RefreshCw, Bell, BellOff, CheckCircle } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { parseRSSFeed, type PodcastEpisode } from '../../utils/rssParser';
 import { type Track } from '../../store/usePlayerStore';
 import { usePodcastStore } from '../../store/usePodcastStore';
 import { useFavoritesStore } from '../../store/useFavoritesStore';
-import { geminiApi } from '../../utils/geminiApi';
 import { audioEngine } from '../../core/audio_engine';
 
 export const PodcastDetail: React.FC = () => {
@@ -16,7 +15,6 @@ export const PodcastDetail: React.FC = () => {
   const [episodes, setEpisodes] = useState<PodcastEpisode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [summary, setSummary] = useState('');
   const [visibleCount, setVisibleCount] = useState(300);
   const { episodeIds: favorites, toggleEpisodeFavorite: toggleFavorite } = useFavoritesStore();
   const { isSubscribed, subscribe, unsubscribe, playedEpisodes, markAsPlayed } = usePodcastStore();
@@ -49,12 +47,6 @@ export const PodcastDetail: React.FC = () => {
 
       const data = await parseRSSFeed(feedUrl, podcast.artworkUrl600, podcast.collectionName);
       setEpisodes(data);
-      
-      if (data.length > 0) {
-         const sampleTitles = data.slice(0, 3).map(e => e.title);
-         const recs = await geminiApi.getSmartRecommendations([podcast.collectionName, ...sampleTitles]);
-         setSummary(recs);
-      }
     } catch (err: any) {
       setError(err.message || 'Failed to load episodes');
     } finally {
@@ -151,19 +143,6 @@ export const PodcastDetail: React.FC = () => {
         </div>
 
         <div className="w-full md:w-2/3">
-          {summary && (
-            <div className="p-6 bg-glass rounded-2xl border border-white/10 text-sm text-text-muted mb-8 shadow-xl relative overflow-hidden group">
-                <div className="absolute top-0 left-0 w-1 h-full bg-accent-cyan opacity-80 group-hover:opacity-100 transition-opacity" />
-                <h3 className="font-semibold text-text-primary mb-3 flex items-center gap-2 text-base">
-                    <Sparkles size={20} className="text-accent-cyan animate-pulse" />
-                    Analyse de l'IA
-                </h3>
-                <div className="whitespace-pre-wrap text-sm leading-relaxed text-text-primary/90">
-                   {summary}
-                </div>
-            </div>
-          )}
-          
           <div className="flex items-center justify-between mb-6 border-b border-white/5 pb-2">
             <h2 className="text-xl font-display font-semibold">Épisodes</h2>
             {isSub && !loading && episodes.length > 0 && (
