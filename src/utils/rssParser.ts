@@ -11,13 +11,23 @@ export interface PodcastEpisode {
 
 export const parseRSSFeed = async (url: string, defaultArtwork?: string, podcastTitle?: string): Promise<PodcastEpisode[]> => {
   try {
-    // We use our local Vite plugin raw proxy to reliably bypass CORS
-    const corsProxyUrl = `/raw-proxy?url=${encodeURIComponent(url)}`;
+    // Vite proxies (/raw-proxy) only work in development.
+    // In production, we fallback to AllOrigins CORS proxy.
+    const isDev = import.meta.env.DEV;
+    const corsProxyUrl = isDev 
+        ? `/raw-proxy?url=${encodeURIComponent(url)}`
+        : `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
     
     const response = await fetch(corsProxyUrl, { signal: AbortSignal.timeout(10000) });
     if (!response.ok) throw new Error(`Failed to fetch RSS feed with status ${response.status}`);
     
-    const xmlText = await response.text();
+    let xmlText = '';
+    if (isDev) {
+        xmlText = await response.text();
+    } else {
+        const data = await response.json();
+        xmlText = data.contents;
+    }
     
     if (!xmlText) {
         throw new Error('Failed to load RSS feed contents');

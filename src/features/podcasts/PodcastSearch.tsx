@@ -25,9 +25,12 @@ export const PodcastSearch: React.FC = () => {
     try {
       setLoading(true);
       setError('');
-      // iTunes Search API does not support explicit pagination offsets reliably.
-      // We will pull the max limit (200) and do local pagination to avoid duplicates.
-      const response = await fetch(`/itunes-proxy/search?term=${encodeURIComponent(searchQuery)}&media=podcast&entity=podcast&limit=200`);
+      // In production (Vercel), Vite proxies strictly do not work.
+      // We use the direct iTunes API URL, which supports CORS for GET.
+      const isDev = import.meta.env.DEV;
+      const baseUrl = isDev ? '/itunes-proxy' : 'https://itunes.apple.com';
+      
+      const response = await fetch(`${baseUrl}/search?term=${encodeURIComponent(searchQuery)}&media=podcast&entity=podcast&limit=200`);
       if (!response.ok) throw new Error('Network response was not ok');
       const data = await response.json();
       const fetchedResults = data.results || [];
